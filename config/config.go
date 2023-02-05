@@ -48,3 +48,7 @@ func IsDebug() bool {
 func GetDBPath() string {
 	return fmt.Sprintf("/etc/%s/%s.db", GetName(), GetName())
 }
+
+func GetTgDBPath() string {
+	return fmt.Sprintf("/etc/%s/%s-tg.db", GetName(), GetName())
+}

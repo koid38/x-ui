@@ -114,7 +114,7 @@ func (s *InboundService) AddInbound(inbound *model.Inbound) (*model.Inbound, err
 		return inbound, err
 	}
 	if exist {
-		return inbound, common.NewError("端口已存在:", inbound.Port)
+		return inbound, common.NewError("Port already exists:", inbound.Port)
 	}
 
 	existEmail, err := s.checkEmailExistForInbound(inbound)
@@ -141,7 +141,7 @@ func (s *InboundService) AddInbounds(inbounds []*model.Inbound) error {
 			return err
 		}
 		if exist {
-			return common.NewError("端口已存在:", inbound.Port)
+			return common.NewError("Port already exists:", inbound.Port)
 		}
 	}
 
@@ -187,7 +187,7 @@ func (s *InboundService) UpdateInbound(inbound *model.Inbound) (*model.Inbound, 
 		return inbound, err
 	}
 	if exist {
-		return inbound, common.NewError("端口已存在:", inbound.Port)
+		return inbound, common.NewError("Port already exists:", inbound.Port)
 	}
 
 	existEmail, err := s.checkEmailExistForInbound(inbound)
