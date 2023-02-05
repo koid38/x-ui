@@ -49,12 +49,12 @@
 <!--                        <a-input v-model="searchKey" placeholder="搜索" autofocus style="max-width: 300px"></a-input>-->
                         <a-table :columns="columns" :row-key="dbInbound => dbInbound.id"
                                  :data-source="dbInbounds"
-                                 :loading="spinning" :scroll="{ x: 1500 }"
+                                 :loading="spinning" :scroll="{ x: 1200 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
                                  @change="() => getDBInbounds()">
                             <template slot="action" slot-scope="text, dbInbound">
-                                <a-icon type="edit" @click="openEditInbound(dbInbound)"></a-icon>
+                                <a-icon type="edit" style="font-size: 25px" @click="openEditInbound(dbInbound)"></a-icon>
                                 <a-dropdown :trigger="['click']">
                                     <a @click="e => e.preventDefault()">{{ i18n "pages.inbounds.operate" }}</a>
                                     <a-menu slot="overlay" @click="a => clickAction(a, dbInbound)">
@@ -127,6 +127,22 @@
                         </a-table>
                     </a-card>
                 </transition>
+                <transition name="tgList" appear>
+                    <a-card hoverable>
+                        <a-table :columns="tgColumns" :row-key="tgClient => tgClient.chatId"
+                                 :data-source="tgClients"
+                                 :loading="spinning"
+                                 :pagination="false"
+                                 style="margin-top: 20px"
+                                 @change="() => getTgClients()">
+                            <template slot="actions" slot-scope="text, tgClient">
+                                <a-icon type="check" @click="approveTgClient(tgClient)" style="font-size: 25px; color:green"></a-icon>
+                                <a-icon type="edit" style="font-size: 25px"></a-icon>
+                                <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
+                            </template>
+                        </a-table>
+                    </a-card>
+                </transition>
             </a-spin>
         </a-layout-content>
     </a-layout>
@@ -134,10 +150,10 @@
 {{template "js" .}}
 <script>
 
-    const columns = [{
+const columns = [{
         title: '{{ i18n "pages.inbounds.operate" }}',
         align: 'center',
-        width: 40,
+        width: 50,
         scopedSlots: { customRender: 'action' },
     }, {
         title: '{{ i18n "pages.inbounds.enable" }}',
@@ -186,6 +202,13 @@
         scopedSlots: { customRender: 'expiryTime' },
     }];
 
+    const tgColumns = [
+    { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 20, dataIndex: "chatId" },
+    { title: '{{ i18n "pages.inbounds.tg.name" }}', align: 'center', width: 40, dataIndex: "clientName" },
+    { title: '{{ i18n "pages.inbounds.tg.email" }}', align: 'center', width: 60, dataIndex: "clientEmail" },
+    { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } }
+    ];
+
     const innerColumns = [
     { title: '{{ i18n "pages.inbounds.client" }}', width: 80, scopedSlots: { customRender: 'client' } },
     { title: '{{ i18n "pages.inbounds.traffic" }}', width: 100, scopedSlots: { customRender: 'traffic' } },
@@ -201,6 +224,7 @@
             spinning: false,
             inbounds: [],
             dbInbounds: [],
+            tgClients: [],
             searchKey: '',
         },
         methods: {
@@ -355,6 +379,7 @@
                 const msg = await HttpUtil.postWithModal(url, data, modal);
                 if (msg.success) {
                     await this.getDBInbounds();
+                    await this.getTgClients();
                 }
             },
             getInboundClients(dbInbound) {
@@ -420,6 +445,42 @@
                     }
                 }
             },
+
+            async getTgClients() {
+                this.loading();
+                const msg = await HttpUtil.post('/xui/tgClients/list');
+                this.loading(false);
+                if (!msg.success) {
+                    return;
+                }
+                this.setTgClients(msg.obj);
+            },
+            setTgClients(tgClients) {
+                this.tgClients.splice(0);
+                for (const client of tgClients) {
+                    const tgClient = new TgClient(client);
+                    this.tgClients.push(tgClient);
+                }
+            },
+            approveTgClient(tgClient) {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
+                    content: '{{ i18n "pages.inbounds.tg.approveTgClientContent"}}',
+                    okText: '{{ i18n "approve"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/xui/tgClients/approve/' + tgClient.chatId),
+                });
+            },
+            deleteTgClient(tgClient) {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.tg.deleteTgClient"}}',
+                    content: '{{ i18n "pages.inbounds.tg.deleteTgClientContent"}}',
+                    okText: '{{ i18n "delete"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/xui/tgClients/del/' + tgClient.chatId),
+                });
+            },
+
         },
         watch: {
             searchKey(value) {
@@ -428,6 +489,7 @@
         },
         mounted() {
             this.getDBInbounds();
+            this.getTgClients();
         },
         computed: {
             total() {

@@ -2,7 +2,8 @@
 "password" = "password"
 "login" = "login"
 "confirm" = "confirm"
-"cancel" = "cancel"
+"cancel" = "Cancel"
+"approve" = "Approve"
 "close" = "close"
 "copy" = "copy"
 "copied" = "copied"
@@ -125,6 +126,16 @@
 "keyContent" = "key content"
 "client" = "Client"
 "uid" = "UID"
+
+[pages.inbounds.tg]
+"approveTgClient" = "Approve Client"
+"approveTgClientContent" = "Are you sure you want to approve the client add it to inbound?"
+"deleteTgClient" = "Delete Client"
+"deleteTgClientContent" = "Are you sure you want to delete this client?"
+"chatId" = "Chat ID"
+"name" = "Name"
+"email" = "Email"
+"actions" = "Actions"
 
 [pages.inbounds.toasts]
 "obtain" = "Obtain"
