@@ -177,7 +177,7 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 	s.State = IdleState
 	resp.Text = "Thank you for signing up. You will be contacted via email soon."
 	if err := s.telegramService.AddTgClient(s.client); err != nil {
-		logger.Warning(err)
+		logger.Error(err)
 	} else {
 		resp.Text = "Thank you for signing up. You will be contacted via email soon."
 	}
@@ -193,7 +193,7 @@ func abortRegistration(s *TgSession, resp *tgbotapi.MessageConfig) {
 func (j *TelegramService) GetClientUsage(id string) string {
 	traffic, err := j.inboundService.GetClientTrafficById(id)
 	if err != nil {
-		logger.Warning(err)
+		logger.Error(err)
 		return "something wrong!"
 	}
 	expiryTime := ""
@@ -226,34 +226,45 @@ func (t *TelegramService) GetTgClients() ([]*model.TgClient, error) {
 	var clients []*model.TgClient
 	err := db.Model(model.TgClient{}).Find(&clients).Error
 	if err != nil && err != gorm.ErrRecordNotFound {
-		logger.Warning(err)
+		logger.Error(err)
 		return nil, err
 	}
-	logger.Warning(clients)
 	return clients, nil
 }
 
-func (t *TelegramService) ApproveClient(id int64) ([]*model.TgClient, error) {
-	db := database.GetTgDB()
-	var clients []*model.TgClient
-	err := db.Model(model.TgClient{}).Find(&clients).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
-		logger.Warning(err)
-		return nil, err
+func (t *TelegramService) ApproveClient(id int64, client model.Client) error {
+
+	inbound, err := t.inboundService.GetInbound(1)
+
+	if err != nil {
+		logger.Error(err)
+		return err
 	}
-	logger.Warning(clients)
-	return clients, nil
+
+	clients, err := t.inboundService.getClients(inbound)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	clients = append(clients, client)
+
+	_, err = t.inboundService.UpdateInbound(inbound)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	return t.DeleteClient(id)
 }
 
 func (t *TelegramService) DeleteClient(id int64) error {
 	db := database.GetTgDB()
-	var clients []*model.TgClient
 	err := db.Model(model.TgClient{}).Delete(model.TgClient{}, id).Error
 	if err != nil {
-		logger.Warning(err)
+		logger.Error(err)
 		return err
 	}
-	logger.Warning(clients)
 	return nil
 }
 
@@ -262,10 +273,9 @@ func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 	var client *model.TgClient
 	err := db.Model(model.TgClient{}).First(&client, id).Error
 	if err != nil {
-		logger.Warning(err)
+		logger.Error(err)
 		return nil, err
 	}
-	logger.Warning(client.ChatID)
 	return client, nil
 }
 

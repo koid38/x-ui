@@ -137,7 +137,7 @@
                                  @change="() => getTgClients()">
                             <template slot="actions" slot-scope="text, tgClient">
                                 <a-icon type="check" @click="approveTgClient(tgClient)" style="font-size: 25px; color:green"></a-icon>
-                                <a-icon type="edit" style="font-size: 25px"></a-icon>
+                                <a-icon type="message" style="font-size: 25px"></a-icon>
                                 <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
                             </template>
                         </a-table>
@@ -215,6 +215,16 @@ const columns = [{
     { title: '{{ i18n "pages.inbounds.expireDate" }}', width: 80, scopedSlots: { customRender: 'expiryTime' } },
     { title: '{{ i18n "pages.inbounds.uid" }}', width: 150, dataIndex: "id" },
     ];
+
+    const protocols = {
+        VMESS: Protocols.VMESS,
+        VLESS: Protocols.VLESS,
+        TROJAN: Protocols.TROJAN,
+        SHADOWSOCKS: Protocols.SHADOWSOCKS,
+        DOKODEMO: Protocols.DOKODEMO,
+        SOCKS: Protocols.SOCKS,
+        HTTP: Protocols.HTTP,
+    };
 
     const app = new Vue({
         delimiters: ['[[', ']]'],
@@ -463,13 +473,23 @@ const columns = [{
                 }
             },
             approveTgClient(tgClient) {
-                this.$confirm({
+                inbound = this.dbInbounds[0].toInbound();
+                dbInbound = this.dbInbounds[0];
+                tgClientModal.show({
                     title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
-                    content: '{{ i18n "pages.inbounds.tg.approveTgClientContent"}}',
-                    okText: '{{ i18n "approve"}}',
-                    cancelText: '{{ i18n "cancel"}}',
-                    onOk: () => this.submit('/xui/tgClients/approve/' + tgClient.chatId),
+                    okText: '{{ i18n "pages.inbounds.revise"}}',
+                    cancelText: '{{ i18n "close" }}',
+                    tgClient: tgClient,
+                    inbound: inbound,
+                    dbInbound: dbInbound,
+                    confirm: async (inbound, dbInbound) => {
+                        tgClientModal.loading();
+                        await this.updateInbound(inbound, dbInbound);
+                        tgClientModal.close();
+                    },
+                    isEdit: true
                 });
+
             },
             deleteTgClient(tgClient) {
                 this.$confirm({
@@ -508,6 +528,7 @@ const columns = [{
 
 </script>
 
+{{template "tgClientApproval"}}
 {{template "inboundModal"}}
 {{template "promptModal"}}
 {{template "qrcodeModal"}}
