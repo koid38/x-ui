@@ -7,3 +7,8 @@ type TgClient struct {
 	Uid      string `json:"clientUid" form:"clientUid"`
 	Approved bool   `json:"approved" form:"approved"`
 }
+
+type TgClientMsg struct {
+	ChatID int64  `json:"chatId" form:"chatId"`
+	Msg    string `json:"msg" form:"msg"`
+}

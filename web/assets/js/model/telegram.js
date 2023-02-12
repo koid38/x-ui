@@ -14,3 +14,15 @@ class TgClient {
     }
 
 }
+
+class TgClientMsg {
+    constructor(data) {
+        this.chatId = 0;
+        this.msg = "";
+        if (data == null) {
+            return;
+        }
+        ObjectUtil.cloneProps(this, data);
+    }
+
+}

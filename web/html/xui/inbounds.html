@@ -130,14 +130,30 @@
                 <transition name="tgList" appear>
                     <a-card hoverable>
                         <a-table :columns="tgColumns" :row-key="tgClient => tgClient.chatId"
-                                 :data-source="tgClients"
+                                 :data-source="getUnapprovedTgClients()"
                                  :loading="spinning"
                                  :pagination="false"
                                  style="margin-top: 20px"
                                  @change="() => getTgClients()">
                             <template slot="actions" slot-scope="text, tgClient">
                                 <a-icon type="check" @click="approveTgClient(tgClient)" style="font-size: 25px; color:green"></a-icon>
-                                <a-icon type="message" style="font-size: 25px"></a-icon>
+                                <a-icon type="message" @click="sendMsgToClient(tgClient)" style="font-size: 25px"></a-icon>
+                                <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
+                            </template>
+                        </a-table>
+                    </a-card>
+                </transition>
+                <transition name="tgListApproved" appear>
+                    <a-card hoverable>
+                        <a-table :columns="tgColumns" :row-key="tgClient => tgClient.chatId"
+                                 :data-source="getApprovedTgClients()"
+                                 :loading="spinning"
+                                 :pagination="false"
+                                 style="margin-top: 20px"
+                                 @change="() => getTgClients()">
+                            <template slot="actions" slot-scope="text, tgClient">
+                                <a-icon type="check" @click="approveTgClient(tgClient)" style="font-size: 25px; color:green"></a-icon>
+                                <a-icon type="message" @click="sendMsgToClient(tgClient)" style="font-size: 25px"></a-icon>
                                 <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
                             </template>
                         </a-table>
@@ -206,7 +222,8 @@ const columns = [{
     { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 20, dataIndex: "chatId" },
     { title: '{{ i18n "pages.inbounds.tg.name" }}', align: 'center', width: 40, dataIndex: "clientName" },
     { title: '{{ i18n "pages.inbounds.tg.email" }}', align: 'center', width: 60, dataIndex: "clientEmail" },
-    { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } }
+    { title: '{{ i18n "pages.inbounds.uid" }}', align: 'center', width: 80, dataIndex: "clientUid" },
+    { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } },
     ];
 
     const innerColumns = [
@@ -350,7 +367,7 @@ const columns = [{
                     streamSettings: inbound.stream.toString(),
                     sniffing: inbound.canSniffing() ? inbound.sniffing.toString() : '{}',
                 };
-                await this.submit(`/xui/inbound/update/${dbInbound.id}`, data, inModal);
+                return await this.submit(`/xui/inbound/update/${dbInbound.id}`, data, inModal);
             },
             resetTraffic(dbInbound) {
                 this.$confirm({
@@ -391,6 +408,7 @@ const columns = [{
                     await this.getDBInbounds();
                     await this.getTgClients();
                 }
+                return msg
             },
             getInboundClients(dbInbound) {
                 if(dbInbound.protocol == Protocols.VLESS) {
@@ -465,6 +483,12 @@ const columns = [{
                 }
                 this.setTgClients(msg.obj);
             },
+            getApprovedTgClients() {
+                return this.tgClients.filter(client => client.approved == true);
+            },
+            getUnapprovedTgClients() {
+                return this.tgClients.filter(client => client.approved == false);
+            },
             setTgClients(tgClients) {
                 this.tgClients.splice(0);
                 for (const client of tgClients) {
@@ -477,19 +501,35 @@ const columns = [{
                 dbInbound = this.dbInbounds[0];
                 tgClientModal.show({
                     title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
-                    okText: '{{ i18n "pages.inbounds.revise"}}',
                     cancelText: '{{ i18n "close" }}',
                     tgClient: tgClient,
                     inbound: inbound,
                     dbInbound: dbInbound,
-                    confirm: async (inbound, dbInbound) => {
+                    confirm: async (inbound, dbInbound, client) => {
+                        const msg = await this.updateInbound(inbound, dbInbound);
+                        if (!msg.success) {
+                            return;
+                        }
                         tgClientModal.loading();
-                        await this.updateInbound(inbound, dbInbound);
+                        tgClient.clientUid = client.id;
+                        tgClient.approved = true;
+                        await this.submit(`/xui/tgClients/approveClient`, tgClient, tgClientModal);
                         tgClientModal.close();
-                    },
-                    isEdit: true
+                    }
                 });
-
+            },
+            sendMsgToClient(tgClient) {
+                tgClientMsgModal.show({
+                    title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
+                    okText: '{{ i18n "pages.inbounds.revise"}}',
+                    cancelText: '{{ i18n "close" }}',
+                    tgClient: tgClient,
+                    confirm: async (clientMsg) => {
+                        tgClientMsgModal.loading();
+                        await this.submit(`/xui/tgClients/sendMsg`, clientMsg, tgClientMsgModal);
+                        tgClientMsgModal.close();
+                    }
+                });
             },
             deleteTgClient(tgClient) {
                 this.$confirm({
@@ -500,7 +540,6 @@ const columns = [{
                     onOk: () => this.submit('/xui/tgClients/del/' + tgClient.chatId),
                 });
             },
-
         },
         watch: {
             searchKey(value) {
@@ -528,7 +567,8 @@ const columns = [{
 
 </script>
 
-{{template "tgClientApproval"}}
+{{template "tgClientApprovalModal"}}
+{{template "tgClientMsgModal"}}
 {{template "inboundModal"}}
 {{template "promptModal"}}
 {{template "qrcodeModal"}}

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"strconv"
+	"x-ui/database/model"
 	"x-ui/logger"
 	"x-ui/web/service"
 
@@ -24,12 +25,13 @@ func (a *TelegramController) initRouter(g *gin.RouterGroup) {
 	g = g.Group("/tgClients")
 
 	g.POST("/list", a.getClients)
+	g.POST("/sendMsg", a.sendMsg)
+	g.POST("/update", a.updateClient)
+	g.POST("/approveClient", a.approveClient)
 	g.POST("/del/:id", a.delClient)
-
 }
 
 func (a *TelegramController) getClients(c *gin.Context) {
-	logger.Warning("Getting tg clients")
 	// user := session.GetLoginUser(c)
 	clients, err := a.telegramService.GetTgClients()
 	if err != nil {
@@ -39,8 +41,57 @@ func (a *TelegramController) getClients(c *gin.Context) {
 	jsonObj(c, clients, nil)
 }
 
+func (a *TelegramController) sendMsg(c *gin.Context) {
+	// user := session.GetLoginUser(c)
+	clientMsg := &model.TgClientMsg{}
+	err := c.ShouldBind(clientMsg)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.addTo"), err)
+		return
+	}
+	logger.Warning(clientMsg.ChatID)
+	logger.Warning(clientMsg.Msg)
+	err = a.telegramService.SendMsgToTgbot(clientMsg.ChatID, clientMsg.Msg)
+	jsonMsgObj(c, I18n(c, "sendMsg"), clientMsg.ChatID, err)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+}
+
+func (a *TelegramController) updateClient(c *gin.Context) {
+	// user := session.GetLoginUser(c)
+	client := &model.TgClient{}
+	err := c.ShouldBind(client)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.addTo"), err)
+		return
+	}
+	err = a.telegramService.UpdateClient(client)
+	jsonMsgObj(c, I18n(c, "pages.inbounds.tg.update"), client, err)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+}
+
+func (a *TelegramController) approveClient(c *gin.Context) {
+	// user := session.GetLoginUser(c)
+	client := &model.TgClient{}
+	err := c.ShouldBind(client)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.addTo"), err)
+		return
+	}
+	err = a.telegramService.ApproveClient(client)
+	jsonMsgObj(c, I18n(c, "pages.inbounds.tg.update"), client, err)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+}
+
 func (a *TelegramController) delClient(c *gin.Context) {
-	logger.Warning("Deleting client")
 	// user := session.GetLoginUser(c)
 	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
 	if err != nil {

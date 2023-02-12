@@ -1,8 +1,8 @@
-{{define "tgClientApproval"}}
+{{define "tgClientApprovalModal"}}
 <a-modal id="tg-client-approval-modal" v-model="tgClientModal.visible" :title="tgClientModal.title" @ok="tgClientModal.ok"
          :confirm-loading="tgClientModal.confirmLoading" :closable="true" :mask-closable="false"
          :ok-text="tgClientModal.okText" cancel-text='{{ i18n "close" }}'>
-        <a-form layout="inline">
+    <a-form layout="inline">
         <a-form-item>
             <span slot="label">
                 Email
@@ -63,7 +63,6 @@
         visible: false,
         confirmLoading: false,
         okText: '{{ i18n "sure" }}',
-        isEdit: false,
         confirm: null,
         tgClient: null,
         inbound: null,
@@ -71,17 +70,17 @@
         client: new Inbound.VLESSSettings.VLESS(),
         
         ok() {
-            ObjectUtil.execute(tgClientModal.confirm, tgClientModal.inbound, tgClientModal.dbInbound);
+            ObjectUtil.execute(tgClientModal.confirm, tgClientModal.inbound, tgClientModal.dbInbound, tgClientModal.client);
         },
         addClient(inbound) {
             switch (inbound.protocol) {
                 case Protocols.VMESS: 
-                    var i = inbound.settings.vmesses.push(new Inbound.VmessSettings.Vmess());
+                    i = inbound.settings.vmesses.push(new Inbound.VmessSettings.Vmess());
                     this.client = inbound.settings.vmesses[i - 1];
                     return inbound.settings.vmesses[i - 1];
 
                 case Protocols.VLESS: 
-                    var i = inbound.settings.vlesses.push(new Inbound.VLESSSettings.VLESS());
+                    i = inbound.settings.vlesses.push(new Inbound.VLESSSettings.VLESS());
                     this.client = inbound.settings.vlesses[i - 1];
                     return inbound.settings.vlesses[i - 1];
 
@@ -89,16 +88,16 @@
                     return null;
             }
         },
-        show({ title='', okText='{{ i18n "sure" }}', inbound, dbInbound, tgClient, confirm=(inbound, dbInbound)=>{}, isEdit=false  }) {
+        show({ title='', okText='{{ i18n "sure" }}', inbound, dbInbound, tgClient, confirm=(inbound, dbInbound, client)=>{}}) {
             this.title = title;
             this.okText = okText;
             this.confirm = confirm;
             this.visible = true;
-            this.isEdit = isEdit;
             this.inbound = inbound;
             this.dbInbound = dbInbound;
             this.tgClient = new TgClient(tgClient);
             this.addClient(this.inbound);
+            this.client.email = tgClient.clientName.replace(/ /g,"_");
         },
         close() {
             tgClientModal.visible = false;
@@ -127,9 +126,6 @@
             },
             get client() {
                 return tgClientModal.client;
-            },
-            get isEdit() {
-                return tgClientModal.isEdit;
             },
         },
         methods: {

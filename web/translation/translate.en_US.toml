@@ -43,6 +43,7 @@
 "getVersion" = "get version"
 "install" = "install"
 "used" = "used"
+"sendMsg" = "Send message"
 
 [menu]
 "dashboard" = "System Status"
@@ -136,6 +137,8 @@
 "name" = "Name"
 "email" = "Email"
 "actions" = "Actions"
+"accountCreated" = "Congratulations! Your account is created. You will soon receive an email."
+"update" = "Update"
 
 [pages.inbounds.toasts]
 "obtain" = "Obtain"

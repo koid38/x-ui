@@ -11,11 +11,11 @@ import (
 	"x-ui/util/common"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"gorm.io/gorm"
 )
 
 type TelegramService struct {
 	inboundService InboundService
+	settingService SettingService
 }
 
 var TgSessions map[int64]*TgSession = make(map[int64]*TgSession)
@@ -103,12 +103,8 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		resp.Text = "Bot is OK!"
 
 	case "register":
-		client, err := s.telegramService.getTgClient(msg.Chat.ID)
-		if err == nil {
-			s.client = nil
-		} else {
-			s.client = client
-		}
+		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
+		s.client = client
 
 		if s.client == nil {
 			s.State = RegNameState
@@ -174,6 +170,8 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 		return &resp
 	}
 	s.client.Email = email
+	s.client.Uid = "not assigned"
+	s.client.Approved = false
 	s.State = IdleState
 	resp.Text = "Thank you for signing up. You will be contacted via email soon."
 	if err := s.telegramService.AddTgClient(s.client); err != nil {
@@ -225,37 +223,29 @@ func (t *TelegramService) GetTgClients() ([]*model.TgClient, error) {
 	db := database.GetTgDB()
 	var clients []*model.TgClient
 	err := db.Model(model.TgClient{}).Find(&clients).Error
-	if err != nil && err != gorm.ErrRecordNotFound {
+	if err != nil {
 		logger.Error(err)
 		return nil, err
 	}
 	return clients, nil
 }
 
-func (t *TelegramService) ApproveClient(id int64, client model.Client) error {
+func (t *TelegramService) UpdateClient(client *model.TgClient) error {
 
-	inbound, err := t.inboundService.GetInbound(1)
+	db := database.GetTgDB()
+	return db.Save(client).Error
+}
 
+func (t *TelegramService) ApproveClient(client *model.TgClient) error {
+
+	err := t.UpdateClient(client)
 	if err != nil {
 		logger.Error(err)
 		return err
 	}
 
-	clients, err := t.inboundService.getClients(inbound)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	clients = append(clients, client)
-
-	_, err = t.inboundService.UpdateInbound(inbound)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	return t.DeleteClient(id)
+	t.SendMsgToTgbot(client.ChatID, "Congratulations! Your account is created. You will soon receive an email.")
+	return nil
 }
 
 func (t *TelegramService) DeleteClient(id int64) error {
@@ -270,10 +260,9 @@ func (t *TelegramService) DeleteClient(id int64) error {
 
 func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 	db := database.GetTgDB()
-	var client *model.TgClient
+	client := &model.TgClient{}
 	err := db.Model(model.TgClient{}).First(&client, id).Error
 	if err != nil {
-		logger.Error(err)
 		return nil, err
 	}
 	return client, nil
@@ -301,4 +290,22 @@ func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.Message
 		TgSessions[msg.Chat.ID] = InitFSM()
 	}
 	return TgSessions[msg.Chat.ID].State(TgSessions[msg.Chat.ID], msg)
+}
+
+func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
+	tgBottoken, err := t.settingService.GetTgBotToken()
+	if err != nil || tgBottoken == "" {
+		logger.Warning("sendMsgToTgbot failed,GetTgBotToken fail:", err)
+		return err
+	}
+	bot, err := tgbotapi.NewBotAPI(tgBottoken)
+	if err != nil {
+		fmt.Println("get tgbot error:", err)
+		return err
+	}
+	bot.Debug = true
+	fmt.Printf("Authorized on account %s", bot.Self.UserName)
+	info := tgbotapi.NewMessage(chatId, msg)
+	bot.Send(info)
+	return nil
 }
