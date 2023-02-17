@@ -161,7 +161,12 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	updates := bot.GetUpdatesChan(u)
 
-	config := tgbotapi.NewSetMyCommands(service.CreateChatMenu()...)
+	crmEnabled, err := j.settingService.GetTgCrmEnabled()
+	if err != nil {
+		crmEnabled = false
+	}
+
+	config := tgbotapi.NewSetMyCommands(service.CreateChatMenu(crmEnabled)...)
 	if _, err := bot.Request(config); err != nil {
 		logger.Warning(err)
 	}
@@ -193,11 +198,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 			continue
 		}
 
-		// if _, exists := service.TgSessions[update.Message.Chat.ID]; !exists {
-		// 	service.TgSessions[update.Message.Chat.ID] = *service.InitFSM()
-		// }
 		resp := j.telegramService.HandleMessage(update.Message)
-		//service.TgSessions[update.Message.Chat.ID].State(update.Message)
 
 		if _, err := bot.Send(resp); err != nil {
 			logger.Warning(err)

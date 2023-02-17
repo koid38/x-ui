@@ -170,6 +170,9 @@ class AllSetting {
         this.tgBotChatId = 0;
         this.tgRunTime = "";
         this.xrayTemplateConfig = "";
+        this.tgCrmEnabled = false;
+        this.tgClientRegFinalMsg = ""
+        this.telegramCrmTargetInbound = 1
 
         this.timeLocation = "Asia/Shanghai";
 

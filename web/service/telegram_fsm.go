@@ -34,32 +34,36 @@ const (
 	StatusCmdKey   = string("status")
 )
 
-func CreateChatMenu() []tgbotapi.BotCommand {
+func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 	commands := []commandEntity{
 		{
 			key:  StartCmdKey,
 			desc: "Start",
-			// action: bot.StartCmd,
 		},
 		{
 			key:  UsageCmdKey,
 			desc: "Get usage",
-			// action: j.getClientUsage(update.Message.CommandArguments()),
 		},
 		{
 			key:  RegisterCmdKey,
-			desc: "Register for an account",
-			// action: b.ReviewsCmd,
+			desc: "Order a new account",
 		},
 		{
 			key:  StatusCmdKey,
 			desc: "Bot status",
-			// action: b.ReviewsCmd,
 		},
 	}
-	tgCommands := make([]tgbotapi.BotCommand, 0, len(commands))
+
+	menuItemCount := len(commands)
+	if !crmEnabled {
+		menuItemCount--
+	}
+
+	tgCommands := make([]tgbotapi.BotCommand, 0, menuItemCount)
 	for _, cmd := range commands {
-		//		bot.commands[cmd.key] = cmd
+		if cmd.key == RegisterCmdKey && !crmEnabled {
+			continue
+		}
 		tgCommands = append(tgCommands, tgbotapi.BotCommand{
 			Command:     "/" + string(cmd.key),
 			Description: cmd.desc,
@@ -90,10 +94,16 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		resp.Text = "Hi!\nYou can use the menu to get your usage"
 		//			msg.ReplyMarkup = numericKeyboard
 
-	case "status":
+	case StatusCmdKey:
 		resp.Text = "Bot is OK!"
 
-	case "register":
+	case RegisterCmdKey:
+		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
+		if err != nil || !crmEnabled {
+			resp.Text = "I don't know that command, choose an item from the menu"
+			break
+		}
+
 		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
 		s.client = client
 
@@ -104,7 +114,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			resp.Text = "You have already registered. We will contact you soon."
 		}
 
-	case "usage":
+	case UsageCmdKey:
 		if msg.CommandArguments() == "" {
 			client, err := s.telegramService.getTgClient(msg.Chat.ID)
 			if err != nil {
@@ -122,7 +132,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			resp.Text = s.telegramService.GetClientUsage(msg.CommandArguments())
 		}
 	default:
-		resp.Text = "I don't know that command, /start"
+		resp.Text = "I don't know that command, choose an item from the menu"
 		//			msg.ReplyMarkup = numericKeyboard
 
 	}
@@ -181,7 +191,13 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 		if s.client.Approved && s.client.Uid != "" {
 			resp.Text = "Congratulations! You are now registered in the system."
 		} else {
-			resp.Text = "Thank you for signing up. You will be contacted via email soon."
+			finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
+			if err != nil {
+				logger.Error(err)
+				finalMsg = "Thank you for signing up. You will be contacted via email soon."
+			}
+
+			resp.Text = finalMsg
 		}
 	}
 	s.State = IdleState

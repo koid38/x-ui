@@ -104,23 +104,6 @@ func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 	return client, nil
 }
 
-// func (t *TelegramService) checkTgClientExists(client *model.TgClient) (string, error) {
-// 	clients, err := t.getTgClients()
-// 	if err != nil {
-// 		return "", err
-// 	}
-// 	emails := make(map[string]bool)
-// 	for _, client := range clients {
-// 		if client.Email != "" {
-// 			if emails[client.Email] {
-// 				return client.Email, nil
-// 			}
-// 			emails[client.Email] = true
-// 		}
-// 	}
-// 	return s.checkEmailsExist(emails, inbound.Id)
-// }
-
 func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	if _, exists := TgSessions[msg.Chat.ID]; !exists {
 		TgSessions[msg.Chat.ID] = InitFSM()

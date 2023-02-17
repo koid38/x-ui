@@ -21,18 +21,21 @@ import (
 var xrayTemplateConfig string
 
 var defaultValueMap = map[string]string{
-	"xrayTemplateConfig": xrayTemplateConfig,
-	"webListen":          "",
-	"webPort":            "54321",
-	"webCertFile":        "",
-	"webKeyFile":         "",
-	"secret":             random.Seq(32),
-	"webBasePath":        "/",
-	"timeLocation":       "Asia/Tehran",
-	"tgBotEnable":        "false",
-	"tgBotToken":         "",
-	"tgBotChatId":        "0",
-	"tgRunTime":          "",
+	"xrayTemplateConfig":       xrayTemplateConfig,
+	"webListen":                "",
+	"webPort":                  "54321",
+	"webCertFile":              "",
+	"webKeyFile":               "",
+	"secret":                   random.Seq(32),
+	"webBasePath":              "/",
+	"timeLocation":             "Asia/Tehran",
+	"tgBotEnable":              "false",
+	"tgBotToken":               "",
+	"tgBotChatId":              "0",
+	"tgRunTime":                "",
+	"tgCrmEnabled":             "false",
+	"tgClientRegFinalMsg":      "Congratulations! Your account is created. You will soon receive an email.",
+	"telegramCrmTargetInbound": "1",
 }
 
 type SettingService struct {
@@ -280,6 +283,22 @@ func (s *SettingService) GetTimeLocation() (*time.Location, error) {
 	}
 	return location, nil
 }
+
+/*********************************************************
+* Telegram CRM
+*********************************************************/
+
+func (s *SettingService) GetTgCrmEnabled() (bool, error) {
+	return s.getBool("tgCrmEnabled")
+}
+
+func (s *SettingService) GetTgCrmRegFinalMsg() (string, error) {
+	return s.getString("tgClientRegFinalMsg")
+}
+
+/*********************************************************
+* End of Telegram CRM
+*********************************************************/
 
 func (s *SettingService) UpdateAllSetting(allSetting *entity.AllSetting) error {
 	if err := allSetting.CheckValid(); err != nil {

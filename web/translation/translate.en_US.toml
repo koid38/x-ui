@@ -198,6 +198,14 @@
 "timeZonee" = "Time Zone"
 "timeZoneDesc" = "The scheduled task runs according to the time in the time zone, and restarts the panel to take effect"
 
+[pages.setting.tg]
+"telegramCrm" = "Telegram CRM"
+"telegramCrmEnabled" = "Telegram CRM"
+"telegramCrmEnableDesc" = "Enable built-in client management system via TG bot"
+"telegramRegFinalMsg" = "Final client registration message"
+"telegramCrmTargetInbound" = "Target Inbound"
+"telegramCrmTargetInboundDesc" = "Inbound ID to add the approved TG client to"
+
 [pages.setting.toasts]
 "modifySetting" = "modify setting"
 "getSetting" = "get setting"
