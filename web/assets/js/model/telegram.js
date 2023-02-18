@@ -6,7 +6,7 @@ class TgClient {
         this.clientId = ""
         this.clientEmail = "";
         this.clientUid = "";
-        this.approved = false;
+        this.enabled = false;
         if (data == null) {
             return;
         }
@@ -17,7 +17,9 @@ class TgClient {
 
 class TgClientMsg {
     constructor(data) {
+        this.id = 0
         this.chatId = 0;
+        this.type = "";
         this.msg = "";
         if (data == null) {
             return;

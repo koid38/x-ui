@@ -25,21 +25,20 @@
         okText: '{{ i18n "sure" }}',
         confirm: null,
         isEdit: true,
-        tgClient: null,
+        chatId: -1,
 
         clientMsg: new TgClientMsg(),
         
         ok() {
             ObjectUtil.execute(tgClientMsgModal.confirm, tgClientMsgModal.clientMsg);
         },
-        show({ title='', okText='{{ i18n "sure" }}', isEdit=true, tgClient, confirm=(clientMsg)=>{} }) {
+        show({ title='', okText='{{ i18n "sure" }}', isEdit=true, chatId, confirm=(clientMsg)=>{} }) {
             this.title = title;
             this.okText = okText;
             this.confirm = confirm;
             this.visible = true;
             this.isEdit = isEdit;
-            this.tgClient = tgClient;
-            this.clientMsg.chatId = tgClient.chatId;
+            this.clientMsg.chatId = chatId;
         },
         close() {
             tgClientMsgModal.visible = false;

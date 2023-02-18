@@ -65,12 +65,13 @@
         okText: '{{ i18n "sure" }}',
         confirm: null,
         tgClient: null,
+        tgReqId: -1,
         inbound: null,
         dbInbound: null,
         client: new Inbound.VLESSSettings.VLESS(),
         
         ok() {
-            ObjectUtil.execute(tgClientModal.confirm, tgClientModal.inbound, tgClientModal.dbInbound, tgClientModal.client);
+            ObjectUtil.execute(tgClientModal.confirm, tgClientModal.inbound, tgClientModal.dbInbound, tgClientModal.client, tgClientModal.tgReqId);
         },
         addClient(inbound) {
             switch (inbound.protocol) {
@@ -88,13 +89,14 @@
                     return null;
             }
         },
-        show({ title='', okText='{{ i18n "sure" }}', inbound, dbInbound, tgClient, confirm=(inbound, dbInbound, client)=>{}}) {
+        show({ title='', okText='{{ i18n "sure" }}', inbound, dbInbound, tgClient, tgReqId, confirm=(inbound, dbInbound, client, tgReqId)=>{}}) {
             this.title = title;
             this.okText = okText;
             this.confirm = confirm;
             this.visible = true;
             this.inbound = inbound;
             this.dbInbound = dbInbound;
+            this.tgReqId = tgReqId;
             this.tgClient = new TgClient(tgClient);
             this.addClient(this.inbound);
             this.client.email = tgClient.clientName.replace(/ /g,"_");

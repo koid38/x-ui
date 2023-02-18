@@ -15,6 +15,7 @@ type TgSession struct {
 	State           stateFn
 	telegramService TelegramService
 	client          *model.TgClient
+	clientRequest   *model.TgClientMsg
 }
 
 type stateFn func(*TgSession, *tgbotapi.Message) *tgbotapi.MessageConfig
@@ -107,7 +108,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
 		s.client = client
 
-		if s.client == nil {
+		if client == nil {
 			s.State = RegNameState
 			resp.Text = "Enter your full name:"
 		} else {
@@ -121,7 +122,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 				resp.Text = "You're not registered in the system. If you already have an account with us, please enter your UID:"
 				s.State = RegUuidState
 			} else {
-				if client.Approved {
+				if client.Enabled {
 					resp.Text = s.telegramService.GetClientUsage(client.Uid)
 				} else {
 					resp.Text = "You have already registered. We will contact you soon."
@@ -154,11 +155,19 @@ func RegNameState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		s.State = IdleState
 		return &resp
 	}
+
 	if s.client == nil {
-		s.client = new(model.TgClient)
+		s.client = &model.TgClient{
+			Enabled: false,
+			ChatID:  msg.Chat.ID,
+			Name:    name,
+		}
 	}
-	s.client.ChatID = msg.Chat.ID
-	s.client.Name = name
+
+	s.clientRequest = &model.TgClientMsg{
+		ChatID: s.client.ChatID,
+	}
+
 	s.State = RegEmailState
 	resp.Text = "Please enter a valid email address:"
 	return &resp
@@ -178,26 +187,33 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 		s.State = IdleState
 		return &resp
 	}
+
 	s.client.Email = email
-	if !(s.client.Approved && s.client.Uid != "") {
-		s.client.Uid = "not assigned"
-		s.client.Approved = false
-	}
+	s.clientRequest.Type = model.Registration
+	s.clientRequest.Msg = "1 user"
 	err := s.telegramService.AddTgClient(s.client)
+
 	if err != nil {
 		logger.Error(err)
 		resp.Text = "Error during registration"
 	} else {
-		if s.client.Approved && s.client.Uid != "" {
+		if s.client.Enabled && s.client.Uid != "" {
 			resp.Text = "Congratulations! You are now registered in the system."
 		} else {
-			finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
+			err := s.telegramService.PushTgClientMsg(s.clientRequest)
 			if err != nil {
 				logger.Error(err)
-				finalMsg = "Thank you for signing up. You will be contacted via email soon."
-			}
+				resp.Text = "Error during registration"
+			} else {
 
-			resp.Text = finalMsg
+				finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
+				if err != nil {
+					logger.Error(err)
+					finalMsg = "Thank you for signing up. You will be contacted via email soon."
+				}
+
+				resp.Text = finalMsg
+			}
 		}
 	}
 	s.State = IdleState
@@ -218,9 +234,9 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		return &resp
 	}
 	s.client = &model.TgClient{
-		ChatID:   msg.Chat.ID,
-		Uid:      uuid,
-		Approved: true,
+		ChatID:  msg.Chat.ID,
+		Uid:     uuid,
+		Enabled: true,
 	}
 
 	s.State = RegNameState

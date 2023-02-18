@@ -15,7 +15,7 @@ import (
 var tgDb *gorm.DB
 
 func initTgClient() error {
-	return tgDb.AutoMigrate(&model.TgClient{})
+	return tgDb.AutoMigrate(&model.TgClient{}, &model.TgClientMsg{})
 }
 
 func InitTgDB(tgDbPath string) error {

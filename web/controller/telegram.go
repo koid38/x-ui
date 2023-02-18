@@ -3,7 +3,6 @@ package controller
 import (
 	"strconv"
 	"x-ui/database/model"
-	"x-ui/logger"
 	"x-ui/web/service"
 
 	"github.com/gin-gonic/gin"
@@ -29,11 +28,24 @@ func (a *TelegramController) initRouter(g *gin.RouterGroup) {
 	g.POST("/update", a.updateClient)
 	g.POST("/approveClient", a.approveClient)
 	g.POST("/del/:id", a.delClient)
+
+	g.POST("/listMsgs", a.getClientMsgs)
+	g.POST("/msg/del/:id", a.delMsg)
 }
 
 func (a *TelegramController) getClients(c *gin.Context) {
 	// user := session.GetLoginUser(c)
 	clients, err := a.telegramService.GetTgClients()
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+	jsonObj(c, clients, nil)
+}
+
+func (a *TelegramController) getClientMsgs(c *gin.Context) {
+	// user := session.GetLoginUser(c)
+	clients, err := a.telegramService.GetTgClientMsgs()
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
 		return
@@ -49,8 +61,7 @@ func (a *TelegramController) sendMsg(c *gin.Context) {
 		jsonMsg(c, I18n(c, "pages.inbounds.addTo"), err)
 		return
 	}
-	logger.Warning(clientMsg.ChatID)
-	logger.Warning(clientMsg.Msg)
+
 	err = a.telegramService.SendMsgToTgbot(clientMsg.ChatID, clientMsg.Msg)
 	jsonMsgObj(c, I18n(c, "sendMsg"), clientMsg.ChatID, err)
 	if err != nil {
@@ -99,6 +110,21 @@ func (a *TelegramController) delClient(c *gin.Context) {
 		return
 	}
 	err = a.telegramService.DeleteClient(id)
+	jsonMsgObj(c, I18n(c, "delete"), id, err)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+}
+
+func (a *TelegramController) delMsg(c *gin.Context) {
+	// user := session.GetLoginUser(c)
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		jsonMsg(c, I18n(c, "get"), err)
+		return
+	}
+	err = a.telegramService.DeleteMsg(id)
 	jsonMsgObj(c, I18n(c, "delete"), id, err)
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)

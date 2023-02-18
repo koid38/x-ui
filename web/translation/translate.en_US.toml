@@ -129,9 +129,10 @@
 "uid" = "UID"
 
 [pages.inbounds.tg]
+"enabled" = "Enabled"
 "approveTgClient" = "Approve Client"
 "approveTgClientContent" = "Are you sure you want to approve the client add it to inbound?"
-"deleteTgClient" = "Delete Client"
+"deleteTgClient" = "Delete TG Client"
 "deleteTgClientContent" = "Are you sure you want to delete this client?"
 "chatId" = "Chat ID"
 "name" = "Name"
@@ -139,6 +140,10 @@
 "actions" = "Actions"
 "accountCreated" = "Congratulations! Your account is created. You will soon receive an email."
 "update" = "Update"
+"msgType" = "Type"
+"msg" = "Message"
+"deleteTgMsg" = "Delete Client Message"
+"deleteTgMsgContent" = "Are you sure you want to delete this message?"
 
 [pages.inbounds.toasts]
 "obtain" = "Obtain"

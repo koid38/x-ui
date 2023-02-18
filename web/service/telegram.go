@@ -58,7 +58,7 @@ func (t *TelegramService) AddTgClient(client *model.TgClient) error {
 func (t *TelegramService) GetTgClients() ([]*model.TgClient, error) {
 	db := database.GetTgDB()
 	var clients []*model.TgClient
-	err := db.Model(model.TgClient{}).Find(&clients).Error
+	err := db.Model(&model.TgClient{}).Find(&clients).Error
 	if err != nil {
 		logger.Error(err)
 		return nil, err
@@ -80,13 +80,19 @@ func (t *TelegramService) ApproveClient(client *model.TgClient) error {
 		return err
 	}
 
+	err = t.DeleteRegRequestMsg(client.ChatID)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
 	t.SendMsgToTgbot(client.ChatID, "Congratulations! Your account is created. You will soon receive an email.")
 	return nil
 }
 
 func (t *TelegramService) DeleteClient(id int64) error {
 	db := database.GetTgDB()
-	err := db.Model(model.TgClient{}).Delete(model.TgClient{}, id).Error
+	err := db.Select("TgClientMsgs").Delete(&model.TgClient{ChatID: id}).Error
 	if err != nil {
 		logger.Error(err)
 		return err
@@ -97,7 +103,7 @@ func (t *TelegramService) DeleteClient(id int64) error {
 func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 	db := database.GetTgDB()
 	client := &model.TgClient{}
-	err := db.Model(model.TgClient{}).First(&client, id).Error
+	err := db.Model(&model.TgClient{}).First(&client, id).Error
 	if err != nil {
 		return nil, err
 	}
@@ -126,5 +132,41 @@ func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
 	fmt.Printf("Authorized on account %s", bot.Self.UserName)
 	info := tgbotapi.NewMessage(chatId, msg)
 	bot.Send(info)
+	return nil
+}
+
+func (t *TelegramService) PushTgClientMsg(clientMsg *model.TgClientMsg) error {
+	db := database.GetTgDB()
+	err := db.Create(clientMsg).Error
+	return err
+}
+
+func (t *TelegramService) GetTgClientMsgs() ([]*model.TgClientMsg, error) {
+	db := database.GetTgDB().Model(&model.TgClientMsg{})
+	var msgs []*model.TgClientMsg
+	err := db.Find(&msgs).Error
+	if err != nil {
+		logger.Error(err)
+		return nil, err
+	}
+	return msgs, nil
+}
+
+func (t *TelegramService) DeleteRegRequestMsg(chatId int64) error {
+	db := database.GetTgDB()
+	err := db.Where("1=1").Delete(&model.TgClientMsg{ChatID: chatId, Type: model.Registration}).Error
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+	return nil
+}
+func (t *TelegramService) DeleteMsg(id int64) error {
+	db := database.GetTgDB()
+	err := db.Model(&model.TgClientMsg{}).Delete(&model.TgClientMsg{}, id).Error
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
 	return nil
 }

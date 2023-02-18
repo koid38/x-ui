@@ -127,34 +127,37 @@
                         </a-table>
                     </a-card>
                 </transition>
-                <transition name="tgList" appear>
+
+                <transition name="tgMsgList" appear>
                     <a-card hoverable>
-                        <a-table :columns="tgColumns" :row-key="tgClient => tgClient.chatId"
-                                 :data-source="getUnapprovedTgClients()"
+                        <a-table :columns="tgMsgColumns" :row-key="tgMsg => tgMsg.chatId"
+                                 :data-source="tgClientMsgs"
                                  :loading="spinning"
                                  :pagination="false"
                                  style="margin-top: 20px"
-                                 @change="() => getTgClients()">
-                            <template slot="actions" slot-scope="text, tgClient">
-                                <a-icon type="check" @click="approveTgClient(tgClient)" style="font-size: 25px; color:green"></a-icon>
-                                <a-icon type="message" @click="sendMsgToClient(tgClient)" style="font-size: 25px"></a-icon>
-                                <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
+                                 @change="() => getTgMsgClients()">
+                            <template slot="actions" slot-scope="text, tgMsg">
+                                <a-icon type="check" @click="approveTgClient(tgMsg)" style="font-size: 25px; color:green"></a-icon>
+                                <a-icon type="message" @click="sendMsgToClient(tgMsg.chatId)" style="font-size: 25px"></a-icon>
+                                <a-icon type="close" @click="deleteTgMsg(tgMsg)" style="font-size: 25px; color:red"></a-icon>
                             </template>
                         </a-table>
                     </a-card>
                 </transition>
-                <transition name="tgListApproved" appear>
+                <transition name="tgClientList" appear>
                     <a-card hoverable>
-                        <a-table :columns="tgColumns" :row-key="tgClient => tgClient.chatId"
-                                 :data-source="getApprovedTgClients()"
+                        <a-table :columns="tgClientColumns" :row-key="tgClient => tgClient.chatId"
+                                 :data-source="tgClients"
                                  :loading="spinning"
                                  :pagination="false"
                                  style="margin-top: 20px"
                                  @change="() => getTgClients()">
                             <template slot="actions" slot-scope="text, tgClient">
-                                <a-icon type="check" @click="approveTgClient(tgClient)" style="font-size: 25px; color:green"></a-icon>
-                                <a-icon type="message" @click="sendMsgToClient(tgClient)" style="font-size: 25px"></a-icon>
+                                <a-icon type="message" @click="sendMsgToClient(tgClient.chatId)" style="font-size: 25px"></a-icon>
                                 <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
+                            </template>
+                            <template slot="enabled" slot-scope="text, tgClient">
+                                <a-switch v-model="tgClient.enabled"></a-switch>
                             </template>
                         </a-table>
                     </a-card>
@@ -166,72 +169,42 @@
 {{template "js" .}}
 <script>
 
-const columns = [{
-        title: '{{ i18n "pages.inbounds.operate" }}',
-        align: 'center',
-        width: 50,
-        scopedSlots: { customRender: 'action' },
-    }, {
-        title: '{{ i18n "pages.inbounds.enable" }}',
-        align: 'center',
-        width: 40,
-        scopedSlots: { customRender: 'enable' },
-    }, {
-        title: "Id",
-        align: 'center',
-        dataIndex: "id",
-        width: 30,
-    }, {
-        title: '{{ i18n "pages.inbounds.remark" }}',
-        align: 'center',
-        width: 100,
-        dataIndex: "remark",
-    }, {
-        title: '{{ i18n "pages.inbounds.protocol" }}',
-        align: 'center',
-        width: 60,
-        scopedSlots: { customRender: 'protocol' },
-    }, {
-        title: '{{ i18n "pages.inbounds.port" }}',
-        align: 'center',
-        dataIndex: "port",
-        width: 60,
-    }, {
-        title: '{{ i18n "pages.inbounds.traffic" }}↑|↓',
-        align: 'center',
-        width: 150,
-        scopedSlots: { customRender: 'traffic' },
-    }, {
-        title: '{{ i18n "pages.inbounds.details" }}',
-        align: 'center',
-        width: 40,
-        scopedSlots: { customRender: 'settings' },
-    }, {
-        title: '{{ i18n "pages.inbounds.transportConfig" }}',
-        align: 'center',
-        width: 60,
-        scopedSlots: { customRender: 'stream' },
-    }, {
-        title: '{{ i18n "pages.inbounds.expireDate" }}',
-        align: 'center',
-        width: 80,
-        scopedSlots: { customRender: 'expiryTime' },
-    }];
-
-    const tgColumns = [
-    { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 20, dataIndex: "chatId" },
-    { title: '{{ i18n "pages.inbounds.tg.name" }}', align: 'center', width: 40, dataIndex: "clientName" },
-    { title: '{{ i18n "pages.inbounds.tg.email" }}', align: 'center', width: 60, dataIndex: "clientEmail" },
-    { title: '{{ i18n "pages.inbounds.uid" }}', align: 'center', width: 80, dataIndex: "clientUid" },
-    { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } },
-    ];
+const columns = [
+    { title: '{{ i18n "pages.inbounds.operate" }}', align: 'center', width: 50, scopedSlots: { customRender: 'action' }, },
+    { title: '{{ i18n "pages.inbounds.enable" }}', align: 'center', width: 40, scopedSlots: { customRender: 'enable' }, },
+    { title: "Id", align: 'center', dataIndex: "id", width: 30, },
+    { title: '{{ i18n "pages.inbounds.remark" }}', align: 'center', width: 100, dataIndex: "remark", },
+    { title: '{{ i18n "pages.inbounds.protocol" }}', align: 'center', width: 60, scopedSlots: { customRender: 'protocol' }, },
+    { title: '{{ i18n "pages.inbounds.port" }}', align: 'center', dataIndex: "port", width: 60, },
+    { title: '{{ i18n "pages.inbounds.traffic" }}↑|↓', align: 'center', width: 150, scopedSlots: { customRender: 'traffic' }, },
+    { title: '{{ i18n "pages.inbounds.details" }}', align: 'center', width: 40, scopedSlots: { customRender: 'settings' }, },
+    { title: '{{ i18n "pages.inbounds.transportConfig" }}', align: 'center', width: 60, scopedSlots: { customRender: 'stream' }, },
+    { title: '{{ i18n "pages.inbounds.expireDate" }}', align: 'center', width: 80, scopedSlots: { customRender: 'expiryTime' }, }
+];
 
     const innerColumns = [
     { title: '{{ i18n "pages.inbounds.client" }}', width: 80, scopedSlots: { customRender: 'client' } },
     { title: '{{ i18n "pages.inbounds.traffic" }}', width: 100, scopedSlots: { customRender: 'traffic' } },
     { title: '{{ i18n "pages.inbounds.expireDate" }}', width: 80, scopedSlots: { customRender: 'expiryTime' } },
     { title: '{{ i18n "pages.inbounds.uid" }}', width: 150, dataIndex: "id" },
-    ];
+];
+
+    const tgMsgColumns = [
+    { title: 'Id', align: 'center', width: 20, dataIndex: "id" },
+    { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 20, dataIndex: "chatId" },
+    { title: '{{ i18n "pages.inbounds.tg.msgType" }}', align: 'center', width: 30, dataIndex: "type" },
+    { title: '{{ i18n "pages.inbounds.tg.msg" }}', align: 'center', width: 80, dataIndex: "msg" },
+    { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } },
+];
+
+    const tgClientColumns = [
+    { title: '{{ i18n "pages.inbounds.tg.enabled" }}', align: 'center', width: 20, scopedSlots: { customRender: 'enabled' } },
+    { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 20, dataIndex: "chatId" },
+    { title: '{{ i18n "pages.inbounds.tg.name" }}', align: 'center', width: 40, dataIndex: "clientName" },
+    { title: '{{ i18n "pages.inbounds.tg.email" }}', align: 'center', width: 60, dataIndex: "clientEmail" },
+    { title: '{{ i18n "pages.inbounds.uid" }}', align: 'center', width: 80, dataIndex: "clientUid" },
+    { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } },
+];
 
     const protocols = {
         VMESS: Protocols.VMESS,
@@ -252,6 +225,7 @@ const columns = [{
             inbounds: [],
             dbInbounds: [],
             tgClients: [],
+            tgClientMsgs: [],
             searchKey: '',
         },
         methods: {
@@ -407,6 +381,7 @@ const columns = [{
                 if (msg.success) {
                     await this.getDBInbounds();
                     await this.getTgClients();
+                    await this.getTgClientMsgs();
                 }
                 return msg
             },
@@ -483,12 +458,21 @@ const columns = [{
                 }
                 this.setTgClients(msg.obj);
             },
-            getApprovedTgClients() {
-                return this.tgClients.filter(client => client.approved == true);
+            async getTgClientMsgs() {
+                this.loading();
+                const msg = await HttpUtil.post('/xui/tgClients/listMsgs');
+                this.loading(false);
+                if (!msg.success) {
+                    return;
+                }
+                this.setTgClientMsgs(msg.obj);
             },
-            getUnapprovedTgClients() {
-                return this.tgClients.filter(client => client.approved == false);
-            },
+            // getApprovedTgClients() {
+            //     return this.tgClients.filter(client => client.enabled == true);
+            // },
+            // getUnapprovedTgClients() {
+            //     return this.tgClients.filter(client => client.enabled == false);
+            // },
             setTgClients(tgClients) {
                 this.tgClients.splice(0);
                 for (const client of tgClients) {
@@ -496,34 +480,47 @@ const columns = [{
                     this.tgClients.push(tgClient);
                 }
             },
-            approveTgClient(tgClient) {
+            setTgClientMsgs(tgClientMsgs) {
+                this.tgClientMsgs.splice(0);
+                for (const tgMsg of tgClientMsgs) {
+                    const tgClientMsg = new TgClientMsg(tgMsg);
+                    this.tgClientMsgs.push(tgClientMsg);
+                }
+            },
+            findTgClientById(chatId) {
+                return this.tgClients.find(client => client.chatId == chatId);
+            },
+            approveTgClient(tgMsg) {
                 inbound = this.dbInbounds[0].toInbound();
                 dbInbound = this.dbInbounds[0];
+                tgClient = this.findTgClientById(tgMsg.chatId);
+                tgReqId = tgMsg.id;
                 tgClientModal.show({
                     title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
                     cancelText: '{{ i18n "close" }}',
                     tgClient: tgClient,
+                    tgReqId: tgReqId,
                     inbound: inbound,
                     dbInbound: dbInbound,
-                    confirm: async (inbound, dbInbound, client) => {
+                    confirm: async (inbound, dbInbound, client, tgReqId) => {
                         const msg = await this.updateInbound(inbound, dbInbound);
                         if (!msg.success) {
                             return;
                         }
                         tgClientModal.loading();
                         tgClient.clientUid = client.id;
-                        tgClient.approved = true;
+                        tgClient.enabled = true;
                         await this.submit(`/xui/tgClients/approveClient`, tgClient, tgClientModal);
                         tgClientModal.close();
                     }
                 });
             },
-            sendMsgToClient(tgClient) {
+            sendMsgToClient(chatId) {
                 tgClientMsgModal.show({
                     title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
                     okText: '{{ i18n "pages.inbounds.revise"}}',
                     cancelText: '{{ i18n "close" }}',
-                    tgClient: tgClient,
+                    chatId: chatId,
                     confirm: async (clientMsg) => {
                         tgClientMsgModal.loading();
                         await this.submit(`/xui/tgClients/sendMsg`, clientMsg, tgClientMsgModal);
@@ -540,6 +537,15 @@ const columns = [{
                     onOk: () => this.submit('/xui/tgClients/del/' + tgClient.chatId),
                 });
             },
+            deleteTgMsg(tgMsg) {
+                this.$confirm({
+                    title: '{{ i18n "pages.inbounds.tg.deleteTgMsg"}}',
+                    content: '{{ i18n "pages.inbounds.tg.deleteTgMsgContent"}}',
+                    okText: '{{ i18n "delete"}}',
+                    cancelText: '{{ i18n "cancel"}}',
+                    onOk: () => this.submit('/xui/tgClients/msg/del/' + tgMsg.id),
+                });
+            },
         },
         watch: {
             searchKey(value) {
@@ -549,6 +555,7 @@ const columns = [{
         mounted() {
             this.getDBInbounds();
             this.getTgClients();
+            this.getTgClientMsgs();
         },
         computed: {
             total() {
