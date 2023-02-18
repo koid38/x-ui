@@ -38,6 +38,7 @@ type AllSetting struct {
 	TgRunTime                string `json:"tgRunTime" form:"tgRunTime"`
 	XrayTemplateConfig       string `json:"xrayTemplateConfig" form:"xrayTemplateConfig"`
 	TgCrmEnabled             bool   `json:"tgCrmEnabled" form:"tgCrmEnabled"`
+	TgClientRegAccList       string `json:"tgClientRegAccList" form:"tgClientRegAccList"`
 	TgClientRegFinalMsg      string `json:"tgClientRegFinalMsg" form:"tgClientRegFinalMsg"`
 	TelegramCrmTargetInbound int    `json:"telegramCrmTargetInbound" form:"telegramCrmTargetInbound"`
 

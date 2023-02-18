@@ -138,12 +138,6 @@ func (j *StatsNotifyJob) UserLoginNotify(username string, ip string, time string
 	j.SendMsgToTgbot(msg)
 }
 
-var numericKeyboard = tgbotapi.NewInlineKeyboardMarkup(
-	tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("Get Usage", "get_usage"),
-	),
-)
-
 func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 	tgBottoken, err := j.settingService.GetTgBotToken()
 	if err != nil || tgBottoken == "" {
@@ -174,30 +168,24 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 	for update := range updates {
 		if update.Message == nil {
 
-			if update.CallbackQuery != nil {
-				// Respond to the callback query, telling Telegram to show the user
-				// a message with the data received.
-				callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-				if _, err := bot.Request(callback); err != nil {
-					logger.Warning(err)
-				}
+			// if update.CallbackQuery != nil {
+			// 	// Respond to the callback query, telling Telegram to show the user
+			// 	// a message with the data received.
+			// 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+			// 	if _, err := bot.Request(callback); err != nil {
+			// 		logger.Warning(err)
+			// 	}
 
-				// And finally, send a message containing the data received.
-				msg := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, "")
+			// 	resp := j.telegramService.HandleMessage(update.CallbackQuery.Message)
 
-				switch update.CallbackQuery.Data {
-				case "get_usage":
-					msg.Text = "To get your usage, send a message like this: \n <code>/usage uuid | id</code> \n Example : <code>/usage fc3239ed-8f3b-4151-ff51-b183d5182142</code>"
-					msg.ParseMode = "HTML"
-				}
-				if _, err := bot.Send(msg); err != nil {
-					logger.Warning(err)
-				}
-			}
+			// 	if _, err := bot.Send(resp); err != nil {
+			// 		logger.Warning(err)
+			// 	}
+			// }
 
 			continue
 		}
-
+		tgbotapi.NewRemoveKeyboard(true)
 		resp := j.telegramService.HandleMessage(update.Message)
 
 		if _, err := bot.Send(resp); err != nil {

@@ -109,6 +109,7 @@
                             <a-list item-layout="horizontal" style="background: white">
                                 <setting-list-item type="switch" title='{{ i18n "pages.setting.tg.telegramCrmEnabled" }}' desc='{{ i18n "pages.setting.tg.telegramCrmEnableDesc" }}'  v-model="allSetting.tgCrmEnabled"></setting-list-item>
                                 <setting-list-item type="number" title='{{ i18n "pages.setting.tg.telegramCrmTargetInbound" }}' desc='{{ i18n "pages.setting.tg.telegramCrmTargetInboundDesc" }}'  v-model="allSetting.telegramCrmTargetInbound"></setting-list-item>
+                                <setting-list-item type="textarea" title='{{ i18n "pages.setting.tg.telegramRegAccList"}}' v-model="allSetting.tgClientRegAccList"></setting-list-item>
                                 <setting-list-item type="textarea" title='{{ i18n "pages.setting.tg.telegramRegFinalMsg"}}' v-model="allSetting.tgClientRegFinalMsg"></setting-list-item>
                             </a-list>
                         </a-tab-pane>

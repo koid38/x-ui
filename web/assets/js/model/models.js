@@ -171,8 +171,9 @@ class AllSetting {
         this.tgRunTime = "";
         this.xrayTemplateConfig = "";
         this.tgCrmEnabled = false;
-        this.tgClientRegFinalMsg = ""
-        this.telegramCrmTargetInbound = 1
+        this.tgClientRegAccList = "";
+        this.tgClientRegFinalMsg = "";
+        this.telegramCrmTargetInbound = 1;
 
         this.timeLocation = "Asia/Shanghai";
 

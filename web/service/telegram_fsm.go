@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"net/mail"
 	"strings"
 	"x-ui/database/model"
@@ -93,7 +94,6 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	switch msg.Command() {
 	case StartCmdKey:
 		resp.Text = "Hi!\nYou can use the menu to get your usage"
-		//			msg.ReplyMarkup = numericKeyboard
 
 	case StatusCmdKey:
 		resp.Text = "Bot is OK!"
@@ -109,8 +109,26 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		s.client = client
 
 		if client == nil {
-			s.State = RegNameState
-			resp.Text = "Enter your full name:"
+			accList, err := s.telegramService.settingService.GetTgCrmRegAccList()
+			if err != nil {
+				resp.Text = "Internal error"
+				break
+			}
+
+			accList = strings.TrimSpace(accList)
+			var buttons []tgbotapi.KeyboardButton
+			accounts := strings.Split(accList, "\n")
+			for i := 1; i <= len(accounts); i++ {
+				buttons = append(buttons, tgbotapi.NewKeyboardButton(fmt.Sprint(i)))
+			}
+			if len(buttons) > 0 {
+				replyKeyboard := tgbotapi.NewOneTimeReplyKeyboard(
+					buttons,
+				)
+				resp.ReplyMarkup = replyKeyboard
+			}
+			s.State = RegAccTypeState
+			resp.Text = "Please choose the type of account you would like to order.\n" + accList
 		} else {
 			resp.Text = "You have already registered. We will contact you soon."
 		}
@@ -134,11 +152,40 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		}
 	default:
 		resp.Text = "I don't know that command, choose an item from the menu"
-		//			msg.ReplyMarkup = numericKeyboard
 
 	}
 	return &resp
 
+}
+
+func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
+
+	if msg.IsCommand() {
+		return abort(s, msg)
+	}
+
+	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
+	orderType := strings.TrimSpace(msg.Text)
+	if orderType == "" {
+		resp.Text = "Please choose a number from the list."
+		s.State = IdleState
+		return &resp
+	}
+
+	s.client = &model.TgClient{
+		Enabled: false,
+		ChatID:  msg.Chat.ID,
+	}
+
+	s.clientRequest = &model.TgClientMsg{
+		ChatID: s.client.ChatID,
+		Type:   model.Registration,
+		Msg:    orderType,
+	}
+
+	s.State = RegNameState
+	resp.Text = "Enter your full name:"
+	return &resp
 }
 
 func RegNameState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
@@ -156,17 +203,7 @@ func RegNameState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		return &resp
 	}
 
-	if s.client == nil {
-		s.client = &model.TgClient{
-			Enabled: false,
-			ChatID:  msg.Chat.ID,
-			Name:    name,
-		}
-	}
-
-	s.clientRequest = &model.TgClientMsg{
-		ChatID: s.client.ChatID,
-	}
+	s.client.Name = name
 
 	s.State = RegEmailState
 	resp.Text = "Please enter a valid email address:"
@@ -184,13 +221,11 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 	if _, err := mail.ParseAddress(email); err != nil {
 		resp.Text = "Incorrect email. Please enter a valid email address:"
 		resp.ParseMode = "HTML"
-		s.State = IdleState
+		// s.State = IdleState
 		return &resp
 	}
 
 	s.client.Email = email
-	s.clientRequest.Type = model.Registration
-	s.clientRequest.Msg = "1 user"
 	err := s.telegramService.AddTgClient(s.client)
 
 	if err != nil {
@@ -209,7 +244,7 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 				finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
 				if err != nil {
 					logger.Error(err)
-					finalMsg = "Thank you for signing up. You will be contacted via email soon."
+					finalMsg = "Thank you for your order. You will be contacted via email soon."
 				}
 
 				resp.Text = finalMsg

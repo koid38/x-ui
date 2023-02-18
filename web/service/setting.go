@@ -35,6 +35,7 @@ var defaultValueMap = map[string]string{
 	"tgRunTime":                "",
 	"tgCrmEnabled":             "false",
 	"tgClientRegFinalMsg":      "Congratulations! Your account is created. You will soon receive an email.",
+	"tgClientRegAccList":       "One user 1 month\nTwo users 2 months",
 	"telegramCrmTargetInbound": "1",
 }
 
@@ -294,6 +295,10 @@ func (s *SettingService) GetTgCrmEnabled() (bool, error) {
 
 func (s *SettingService) GetTgCrmRegFinalMsg() (string, error) {
 	return s.getString("tgClientRegFinalMsg")
+}
+
+func (s *SettingService) GetTgCrmRegAccList() (string, error) {
+	return s.getString("tgClientRegAccList")
 }
 
 /*********************************************************
