@@ -93,7 +93,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	// Extract the command from the Message.
 	switch msg.Command() {
 	case StartCmdKey:
-		resp.Text = "Hi!\nYou can use the menu to get your usage"
+		resp.Text = "Hi!\nChoose an item from the menu."
 
 	case StatusCmdKey:
 		resp.Text = "Bot is OK!"
@@ -172,9 +172,11 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 		return &resp
 	}
 
+	name := msg.Chat.FirstName + " " + msg.Chat.LastName + " " + msg.Chat.UserName
 	s.client = &model.TgClient{
 		Enabled: false,
 		ChatID:  msg.Chat.ID,
+		Name:    name,
 	}
 
 	s.clientRequest = &model.TgClientMsg{
@@ -182,28 +184,6 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 		Type:   model.Registration,
 		Msg:    orderType,
 	}
-
-	s.State = RegNameState
-	resp.Text = "Enter your full name:"
-	return &resp
-}
-
-func RegNameState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
-
-	if msg.IsCommand() {
-		return abort(s, msg)
-	}
-
-	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
-	name := strings.TrimSpace(msg.Text)
-	if name == "" {
-		resp.Text = "Incorrect format. Please enter your full name:"
-		// s.Response.ParseMode = "HTML"
-		s.State = IdleState
-		return &resp
-	}
-
-	s.client.Name = name
 
 	s.State = RegEmailState
 	resp.Text = "Please enter a valid email address:"
@@ -274,7 +254,7 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		Enabled: true,
 	}
 
-	s.State = RegNameState
+	s.State = RegEmailState
 	resp.Text = "Enter your full name:"
 	return &resp
 }
