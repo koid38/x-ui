@@ -167,30 +167,25 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	for update := range updates {
 		if update.Message == nil {
-
-			// if update.CallbackQuery != nil {
-			// 	// Respond to the callback query, telling Telegram to show the user
-			// 	// a message with the data received.
-			// 	callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
-			// 	if _, err := bot.Request(callback); err != nil {
-			// 		logger.Warning(err)
-			// 	}
-
-			// 	resp := j.telegramService.HandleMessage(update.CallbackQuery.Message)
-
-			// 	if _, err := bot.Send(resp); err != nil {
-			// 		logger.Warning(err)
-			// 	}
-			// }
-
 			continue
 		}
-		tgbotapi.NewRemoveKeyboard(true)
-		resp := j.telegramService.HandleMessage(update.Message)
 
+		tgbotapi.NewRemoveKeyboard(true)
+
+		if update.Message.Photo != nil && j.telegramService.CanAcceptPhoto(update.Message.Chat.ID) {
+			adminId, _ := j.settingService.GetTgBotChatId()
+
+			fConfig := tgbotapi.NewForward(int64(adminId), update.Message.Chat.ID, update.Message.MessageID)
+			if _, err := bot.Send(fConfig); err != nil {
+				logger.Warning(err)
+			}
+		}
+
+		resp := j.telegramService.HandleMessage(update.Message)
 		if _, err := bot.Send(resp); err != nil {
 			logger.Warning(err)
 		}
+
 	}
 	return j
 

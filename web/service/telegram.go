@@ -114,7 +114,14 @@ func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.Message
 	if _, exists := TgSessions[msg.Chat.ID]; !exists {
 		TgSessions[msg.Chat.ID] = InitFSM()
 	}
-	return TgSessions[msg.Chat.ID].State(TgSessions[msg.Chat.ID], msg)
+	return TgSessions[msg.Chat.ID].state(TgSessions[msg.Chat.ID], msg)
+}
+
+func (t *TelegramService) CanAcceptPhoto(chatId int64) bool {
+	if _, exists := TgSessions[chatId]; !exists {
+		TgSessions[chatId] = InitFSM()
+	}
+	return TgSessions[chatId].canAcceptPhoto
 }
 
 func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
@@ -153,8 +160,8 @@ func (t *TelegramService) GetTgClientMsgs() ([]*model.TgClientMsg, error) {
 }
 
 func (t *TelegramService) DeleteRegRequestMsg(chatId int64) error {
-	db := database.GetTgDB()
-	err := db.Where("1=1").Delete(&model.TgClientMsg{ChatID: chatId, Type: model.Registration}).Error
+	db := database.GetTgDB().Model(&model.TgClientMsg{})
+	err := db.Delete(&model.TgClientMsg{}, "chat_id =? AND type=?", chatId, model.Registration).Error
 	if err != nil {
 		logger.Error(err)
 		return err
