@@ -21,6 +21,7 @@ class TgClientMsg {
         this.chatId = 0;
         this.type = "";
         this.msg = "";
+        this.clientName = "";
         if (data == null) {
             return;
         }
