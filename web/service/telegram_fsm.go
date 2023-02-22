@@ -342,7 +342,7 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	}
 
 	s.state = RegEmailState
-	resp.Text = "Enter your full name:"
+	resp.Text = "Enter your email address:"
 	return &resp
 }
 
