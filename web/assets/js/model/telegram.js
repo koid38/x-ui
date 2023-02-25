@@ -3,7 +3,7 @@ class TgClient {
     constructor(data) {
         this.chatId = 0;
         this.clientName = "";
-        this.clientId = ""
+        this.clientId = "";
         this.clientEmail = "";
         this.clientUid = "";
         this.enabled = false;

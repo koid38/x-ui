@@ -104,6 +104,35 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	case StartCmdKey:
 		resp.Text = "Hi!\nChoose an item from the menu."
 
+	case UsageCmdKey:
+		client, err := s.telegramService.getTgClient(msg.Chat.ID)
+		if msg.CommandArguments() == "" {
+			if err != nil {
+				resp.Text = "You're not registered in the system. If you already have an account with us, please enter your UID:"
+				s.state = RegUuidState
+			} else {
+				if client.Enabled {
+					resp.Text, _ = s.telegramService.GetClientUsage(client.Uid)
+				} else {
+					resp.Text = "You have already registered. We will contact you soon."
+				}
+			}
+
+		} else {
+			resp.Text, err = s.telegramService.GetClientUsage(msg.CommandArguments())
+
+			if client == nil && err == nil {
+				name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
+				s.client = &model.TgClient{
+					Enabled: true,
+					ChatID:  msg.Chat.ID,
+					Name:    name,
+					Uid:     msg.CommandArguments(),
+				}
+				err = s.telegramService.AddTgClient(s.client)
+			}
+		}
+
 	case RegisterCmdKey:
 		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
 		if err != nil || !crmEnabled {
@@ -143,24 +172,6 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			resp.Text = "Please choose the package you would like to order.\n" + accList
 		} else {
 			resp.Text = "You cannot register for more than 1 account."
-		}
-
-	case UsageCmdKey:
-		if msg.CommandArguments() == "" {
-			client, err := s.telegramService.getTgClient(msg.Chat.ID)
-			if err != nil {
-				resp.Text = "You're not registered in the system. If you already have an account with us, please enter your UID:"
-				s.state = RegUuidState
-			} else {
-				if client.Enabled {
-					resp.Text = s.telegramService.GetClientUsage(client.Uid)
-				} else {
-					resp.Text = "You have already registered. We will contact you soon."
-				}
-			}
-
-		} else {
-			resp.Text = s.telegramService.GetClientUsage(msg.CommandArguments())
 		}
 
 	case RenewCmdKey:

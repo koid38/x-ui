@@ -16,11 +16,11 @@ type TelegramService struct {
 	settingService SettingService
 }
 
-func (j *TelegramService) GetClientUsage(id string) string {
+func (j *TelegramService) GetClientUsage(id string) (string, error) {
 	traffic, err := j.inboundService.GetClientTrafficById(id)
 	if err != nil {
 		logger.Error(err)
-		return "Incorrect UUID!"
+		return "Incorrect UUID!", err
 	}
 	expiryTime := ""
 	if traffic.ExpiryTime == 0 {
@@ -38,7 +38,7 @@ func (j *TelegramService) GetClientUsage(id string) string {
 		traffic.Enable, traffic.Email, common.FormatTraffic(traffic.Up), common.FormatTraffic(traffic.Down), common.FormatTraffic((traffic.Up + traffic.Down)),
 		total, expiryTime)
 
-	return output
+	return output, err
 }
 
 func (j *TelegramService) CheckIfClientExists(id string) bool {
