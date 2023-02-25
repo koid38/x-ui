@@ -310,23 +310,19 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 		logger.Error(err)
 		resp.Text = "Error during registration"
 	} else {
-		if s.client.Enabled && s.client.Uid != "" {
-			resp.Text = "Congratulations! You are now registered in the system."
+		err := s.telegramService.PushTgClientMsg(s.clientRequest)
+		if err != nil {
+			logger.Error(err)
+			resp.Text = "Error during registration"
 		} else {
-			err := s.telegramService.PushTgClientMsg(s.clientRequest)
+
+			finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
 			if err != nil {
 				logger.Error(err)
-				resp.Text = "Error during registration"
-			} else {
-
-				finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
-				if err != nil {
-					logger.Error(err)
-					finalMsg = "Thank you for your order. You will be contacted soon."
-				}
-
-				resp.Text = finalMsg
+				finalMsg = "Thank you for your order. You will be contacted soon."
 			}
+
+			resp.Text = finalMsg
 		}
 	}
 	s.state = IdleState
@@ -352,8 +348,23 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		Enabled: true,
 	}
 
-	s.state = RegEmailState
-	resp.Text = "Enter your email address:"
+	name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
+	s.client = &model.TgClient{
+		Enabled: true,
+		ChatID:  msg.Chat.ID,
+		Name:    name,
+		Uid:     uuid,
+	}
+
+	err := s.telegramService.AddTgClient(s.client)
+	if err != nil {
+		logger.Error(err)
+		resp.Text = "Error during registration"
+	} else {
+		resp.Text = "Congratulations! You are now registered in the system."
+	}
+
+	s.state = IdleState
 	return &resp
 }
 
@@ -372,6 +383,10 @@ func SendReceiptState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConf
 	}
 	return &resp
 }
+
+/*********************************************************
+* Helper functions
+*********************************************************/
 
 func abort(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	s.state = IdleState
