@@ -171,7 +171,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			s.state = RegAccTypeState
 			resp.Text = "Please choose the package you would like to order.\n" + accList
 		} else {
-			resp.Text = "You cannot register for more than 1 account."
+			resp.Text = "You cannot order more than one account per each telegram ID."
 		}
 
 	case RenewCmdKey:
@@ -263,7 +263,7 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 		Name:    name,
 	}
 
-	s.clientRequest.Msg = orderType
+	s.clientRequest.Msg = "Type: " + orderType
 
 	if s.clientRequest.Type == model.Renewal {
 		err := s.telegramService.PushTgClientMsg(s.clientRequest)
@@ -304,6 +304,22 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 	}
 
 	s.client.Email = email
+	resp.Text = "Would you like to add any notes?"
+
+	s.state = RegNoteState
+	return &resp
+}
+
+func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
+
+	if msg.IsCommand() {
+		return abort(s, msg)
+	}
+
+	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
+	note := strings.TrimSpace(msg.Text)
+
+	s.clientRequest.Msg += ", Note: " + note
 	err := s.telegramService.AddTgClient(s.client)
 
 	if err != nil {

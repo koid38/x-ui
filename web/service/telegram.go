@@ -161,7 +161,7 @@ func (t *TelegramService) GetTgClientMsgs() ([]*model.TgClientMsg, error) {
 
 func (t *TelegramService) DeleteRegRequestMsg(chatId int64) error {
 	db := database.GetTgDB().Model(&model.TgClientMsg{})
-	err := db.Delete(&model.TgClientMsg{}, "chat_id =? AND type=?", chatId, model.Registration).Error
+	err := db.Delete(&model.TgClientMsg{}, "chat_id =? AND (type=? OR type=?)", chatId, model.Registration, model.Renewal).Error
 	if err != nil {
 		logger.Error(err)
 		return err
