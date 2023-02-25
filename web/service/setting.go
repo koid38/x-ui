@@ -35,7 +35,7 @@ var defaultValueMap = map[string]string{
 	"tgRunTime":                "",
 	"tgCrmEnabled":             "false",
 	"tgClientRegFinalMsg":      "Congratulations! Your account is created. You will soon receive an email.",
-	"tgClientRegAccList":       "One user 1 month\nTwo users 2 months",
+	"tgClientRegAccList":       "1- One user 1 month\n2- Two users 2 months",
 	"telegramCrmTargetInbound": "1",
 }
 

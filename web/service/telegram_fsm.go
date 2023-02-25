@@ -331,14 +331,8 @@ func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			logger.Error(err)
 			resp.Text = "Error during registration"
 		} else {
-
-			finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
-			if err != nil {
-				logger.Error(err)
-				finalMsg = "Thank you for your order. You will be contacted soon."
-			}
-
-			resp.Text = finalMsg
+			resp.Text = "Thank you for your order. You will be contacted soon."
+			resp.ParseMode = "HTML"
 		}
 	}
 	s.state = IdleState

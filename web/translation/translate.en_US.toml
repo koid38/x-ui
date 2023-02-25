@@ -207,8 +207,9 @@
 "telegramCrm" = "Telegram CRM"
 "telegramCrmEnabled" = "Telegram CRM"
 "telegramCrmEnableDesc" = "Enable built-in client management system via TG bot"
-"telegramRegFinalMsg" = "Final client registration message"
-"telegramRegAccList" = "Account type list for new orders"
+"telegramRegApprovalMsg" = "Client approval message"
+"telegramRegApprovalDesc" = "Will be sent to the user right after the request is approved"
+"telegramRegAccList" = "Package list for new orders"
 "telegramCrmTargetInbound" = "Target Inbound"
 "telegramCrmTargetInboundDesc" = "Inbound ID to add the approved TG client to"
 

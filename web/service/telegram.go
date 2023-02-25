@@ -86,7 +86,12 @@ func (t *TelegramService) ApproveClient(client *model.TgClient) error {
 		return err
 	}
 
-	t.SendMsgToTgbot(client.ChatID, "Congratulations! Your account is created. You will soon receive an email.")
+	finalMsg, err := t.settingService.GetTgCrmRegFinalMsg()
+	if err != nil {
+		logger.Error(err)
+		finalMsg = "Congratulations! Your account is created. You will soon receive an email."
+	}
+	t.SendMsgToTgbot(client.ChatID, finalMsg)
 	return nil
 }
 
@@ -138,6 +143,7 @@ func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
 	bot.Debug = true
 	fmt.Printf("Authorized on account %s", bot.Self.UserName)
 	info := tgbotapi.NewMessage(chatId, msg)
+	info.ReplyMarkup = "HTML"
 	bot.Send(info)
 	return nil
 }
