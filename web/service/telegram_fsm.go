@@ -36,6 +36,7 @@ const (
 	RegisterCmdKey    = string("register")
 	RenewCmdKey       = string("renew")
 	SendReceiptCmdKey = string("receipt")
+	ResetCmdKey       = string("reset")
 )
 
 func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
@@ -59,6 +60,10 @@ func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 		{
 			key:  SendReceiptCmdKey,
 			desc: "Upload receipt",
+		},
+		{
+			key:  ResetCmdKey,
+			desc: "Reset Bot",
 		},
 	}
 
@@ -234,6 +239,21 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			resp.Text = "You're not registered in the system. You need to put an order first."
 		}
 
+	case ResetCmdKey:
+		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
+		s.client = client
+		if client != nil {
+			s.state = ConfirmResetState
+			resp.Text = "Are you sure you want to reset your bot? You can link your VPN account to your Telegram ID again later."
+			resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("Yes", "Yes"),
+				tgbotapi.NewInlineKeyboardButtonData("No", "No"),
+			),
+			)
+		} else {
+			resp.Text = "You're not registered in the system. You need to put an order first."
+		}
+
 	default:
 		resp.Text = "I don't know that command, choose an item from the menu"
 
@@ -391,6 +411,23 @@ func SendReceiptState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConf
 	} else {
 		resp.Text = "Please upload a screenshot of your payment receipt! It must be a picture format."
 	}
+	return &resp
+}
+
+func ConfirmResetState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
+	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
+	if strings.ToLower(msg.Text) == "yes" {
+		err := s.telegramService.DeleteClient(msg.Chat.ID)
+		if err == nil {
+			resp.Text = "Telegram bot got successfully reset."
+		} else {
+			resp.Text = "Error while resetting the Telegram bot!"
+		}
+	} else {
+		resp.Text = "Cancelled!"
+	}
+
+	s.state = IdleState
 	return &resp
 }
 

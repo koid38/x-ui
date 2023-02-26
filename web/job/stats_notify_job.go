@@ -167,6 +167,19 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	for update := range updates {
 		if update.Message == nil {
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+			if _, err := bot.Request(callback); err != nil {
+				logger.Error(err)
+			}
+
+			resp := j.telegramService.HandleMessage(&tgbotapi.Message{
+				Chat: &tgbotapi.Chat{ID: update.CallbackQuery.Message.Chat.ID},
+				Text: update.CallbackQuery.Data,
+			})
+
+			if _, err := bot.Send(resp); err != nil {
+				logger.Warning(err)
+			}
 			continue
 		}
 
@@ -177,13 +190,13 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 			fConfig := tgbotapi.NewForward(int64(adminId), update.Message.Chat.ID, update.Message.MessageID)
 			if _, err := bot.Send(fConfig); err != nil {
-				logger.Warning(err)
+				logger.Error(err)
 			}
 		}
 
 		resp := j.telegramService.HandleMessage(update.Message)
 		if _, err := bot.Send(resp); err != nil {
-			logger.Warning(err)
+			logger.Error(err)
 		}
 
 	}
