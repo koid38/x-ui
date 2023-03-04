@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 	"x-ui/database"
 	"x-ui/database/model"
@@ -135,6 +137,11 @@ func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 	return client, nil
 }
 
+func (t *TelegramService) replaceMarkup(msg *string, tgClient *model.TgClient) string {
+	replacer := strings.NewReplacer("<UID>", tgClient.Uid, "<CHAT_ID>", strconv.FormatInt(tgClient.ChatID, 10))
+	return replacer.Replace(*msg)
+}
+
 func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	if _, exists := TgSessions[msg.Chat.ID]; !exists {
 		TgSessions[msg.Chat.ID] = InitFSM()
@@ -150,6 +157,12 @@ func (t *TelegramService) CanAcceptPhoto(chatId int64) bool {
 }
 
 func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
+
+	tgClient, err := t.getTgClient(chatId)
+	if err == nil {
+		msg = t.replaceMarkup(&msg, tgClient)
+	}
+
 	tgBottoken, err := t.settingService.GetTgBotToken()
 	if err != nil || tgBottoken == "" {
 		logger.Warning("sendMsgToTgbot failed,GetTgBotToken fail:", err)
