@@ -291,14 +291,7 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 			logger.Error(err)
 			resp.Text = "Error during renewal"
 		} else {
-
-			finalMsg, err := s.telegramService.settingService.GetTgCrmRegFinalMsg()
-			if err != nil {
-				logger.Error(err)
-				finalMsg = "Thank you for your order. You will be contacted soon."
-			}
-
-			resp.Text = finalMsg
+			resp.Text = "Thank you for your order. You will be contacted soon."
 			s.state = IdleState
 		}
 		return &resp

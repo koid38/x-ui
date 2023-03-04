@@ -491,15 +491,16 @@ const columns = [
                 inbound = this.dbInbounds[0].toInbound();
                 dbInbound = this.dbInbounds[0];
                 tgClient = this.findTgClientById(tgMsg.chatId);
-                tgReqId = tgMsg.id;
+                newClient = newClient;
                 tgClientModal.show({
                     title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
                     cancelText: '{{ i18n "close" }}',
                     tgClient: tgClient,
-                    tgReqId: tgReqId,
+                    newClient: newClient,
                     inbound: inbound,
                     dbInbound: dbInbound,
-                    confirm: async (inbound, dbInbound, client, tgReqId) => {
+                    newClient: newClient,
+                    confirm: async (inbound, dbInbound, client, newClient) => {
                         const msg = await this.updateInbound(inbound, dbInbound);
                         if (!msg.success) {
                             return;
@@ -507,7 +508,11 @@ const columns = [
                         tgClientModal.loading();
                         tgClient.clientUid = client.id;
                         tgClient.enabled = true;
-                        await this.submit(`/xui/tgClients/approveClient`, tgClient, tgClientModal);
+                        if (newClient) {
+                            await this.submit(`/xui/tgClients/registerClient`, tgClient, tgClientModal);
+                        } else {
+                            await this.submit(`/xui/tgClients/renewClient`, tgClient, tgClientModal);
+                        }
                         tgClientModal.close();
                     }
                 });

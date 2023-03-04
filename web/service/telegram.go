@@ -72,7 +72,7 @@ func (t *TelegramService) UpdateClient(client *model.TgClient) error {
 	return db.Save(client).Error
 }
 
-func (t *TelegramService) ApproveClient(client *model.TgClient) error {
+func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 
 	err := t.UpdateClient(client)
 	if err != nil {
@@ -91,6 +91,26 @@ func (t *TelegramService) ApproveClient(client *model.TgClient) error {
 		logger.Error(err)
 		finalMsg = "Congratulations! Your account is created. You will soon receive an email."
 	}
+	t.SendMsgToTgbot(client.ChatID, finalMsg)
+	return nil
+}
+
+func (t *TelegramService) RenewClient(client *model.TgClient) error {
+
+	err := t.UpdateClient(client)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	err = t.DeleteRegRequestMsg(client.ChatID)
+	if err != nil {
+		logger.Error(err)
+		return err
+	}
+
+	finalMsg := "Congratulations! Your account is renewed."
+
 	t.SendMsgToTgbot(client.ChatID, finalMsg)
 	return nil
 }
@@ -143,7 +163,7 @@ func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
 	bot.Debug = true
 	fmt.Printf("Authorized on account %s", bot.Self.UserName)
 	info := tgbotapi.NewMessage(chatId, msg)
-	info.ReplyMarkup = "HTML"
+	info.ParseMode = "HTML"
 	bot.Send(info)
 	return nil
 }
@@ -174,6 +194,7 @@ func (t *TelegramService) DeleteRegRequestMsg(chatId int64) error {
 	}
 	return nil
 }
+
 func (t *TelegramService) DeleteMsg(id int64) error {
 	db := database.GetTgDB()
 	err := db.Model(&model.TgClientMsg{}).Delete(&model.TgClientMsg{}, id).Error

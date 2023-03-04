@@ -78,13 +78,13 @@
         okText: '{{ i18n "sure" }}',
         confirm: null,
         tgClient: null,
-        tgReqId: -1,
+        newClient: true,
         inbound: null,
         dbInbound: null,
         client: null,
         
         ok() {
-            ObjectUtil.execute(tgClientModal.confirm, tgClientModal.inbound, tgClientModal.dbInbound, tgClientModal.client, tgClientModal.tgReqId);
+            ObjectUtil.execute(tgClientModal.confirm, tgClientModal.inbound, tgClientModal.dbInbound, tgClientModal.client, tgClientModal.newClient);
         },
         addClient(inbound) {
             switch (inbound.protocol) {
@@ -114,14 +114,14 @@
                     return null;
             }
         },
-        show({ title='', okText='{{ i18n "sure" }}', inbound, dbInbound, tgClient, tgReqId, confirm=(inbound, dbInbound, client, tgReqId)=>{}}) {
+        show({ title='', okText='{{ i18n "sure" }}', inbound, dbInbound, tgClient, newClient, confirm=(inbound, dbInbound, client, newClient)=>{}}) {
             this.title = title;
             this.okText = okText;
             this.confirm = confirm;
             this.visible = true;
             this.inbound = inbound;
             this.dbInbound = dbInbound;
-            this.tgReqId = tgReqId;
+            this.newClient = newClient;
             this.tgClient = new TgClient(tgClient);
             if (this.tgClient.clientUid != "") {
                 this.client = this.fetchClient(this.inbound, this.tgClient.clientUid);

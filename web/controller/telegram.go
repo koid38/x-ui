@@ -26,7 +26,8 @@ func (a *TelegramController) initRouter(g *gin.RouterGroup) {
 	g.POST("/list", a.getClients)
 	g.POST("/sendMsg", a.sendMsg)
 	g.POST("/update", a.updateClient)
-	g.POST("/approveClient", a.approveClient)
+	g.POST("/registerClient", a.approveClient)
+	g.POST("/renewClient", a.renewClient)
 	g.POST("/del/:id", a.delClient)
 
 	g.POST("/listMsgs", a.getClientMsgs)
@@ -94,7 +95,23 @@ func (a *TelegramController) approveClient(c *gin.Context) {
 		jsonMsg(c, I18n(c, "pages.inbounds.addTo"), err)
 		return
 	}
-	err = a.telegramService.ApproveClient(client)
+	err = a.telegramService.RegisterClient(client)
+	jsonMsgObj(c, I18n(c, "pages.inbounds.tg.update"), client, err)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
+		return
+	}
+}
+
+func (a *TelegramController) renewClient(c *gin.Context) {
+	// user := session.GetLoginUser(c)
+	client := &model.TgClient{}
+	err := c.ShouldBind(client)
+	if err != nil {
+		jsonMsg(c, I18n(c, "pages.inbounds.addTo"), err)
+		return
+	}
+	err = a.telegramService.RenewClient(client)
 	jsonMsgObj(c, I18n(c, "pages.inbounds.tg.update"), client, err)
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
