@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"net/mail"
+	"regexp"
 	"strings"
 	"x-ui/database/model"
 	"x-ui/logger"
@@ -359,7 +360,9 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	}
 
 	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
-	uuid := strings.TrimSpace(msg.Text)
+	re := regexp.MustCompile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+	uuid := re.FindString(msg.Text)
+
 	if !s.telegramService.CheckIfClientExists(uuid) {
 		resp.Text = "UUID doesn't exist in the database. E.g.\nfc3239ed-8f3b-4151-ff51-b183d5182142\nPlease enter a correct UUID:"
 		resp.ParseMode = "HTML"
