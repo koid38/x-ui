@@ -28,7 +28,10 @@ type StatsNotifyJob struct {
 }
 
 func NewStatsNotifyJob() *StatsNotifyJob {
-	return new(StatsNotifyJob)
+	statsNotifyJob := new(StatsNotifyJob)
+	statsNotifyJob.telegramService.InitI18n()
+
+	return statsNotifyJob
 }
 
 func (j *StatsNotifyJob) SendMsgToTgbot(msg string) {
@@ -58,6 +61,7 @@ func (j *StatsNotifyJob) SendMsgToTgbot(msg string) {
 
 // Here run is a interface method of Job interface
 func (j *StatsNotifyJob) Run() {
+
 	if !j.xrayService.IsXrayRunning() {
 		return
 	}

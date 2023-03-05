@@ -44,27 +44,27 @@ func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 	commands := []commandEntity{
 		{
 			key:  StartCmdKey,
-			desc: "Start",
+			desc: Tr("menuStart"),
 		},
 		{
 			key:  UsageCmdKey,
-			desc: "Get usage",
+			desc: Tr("menuGetUsage"),
 		},
 		{
 			key:  RegisterCmdKey,
-			desc: "Order a new account",
+			desc: Tr("menuOrder"),
 		},
 		{
 			key:  RenewCmdKey,
-			desc: "Renew account",
+			desc: Tr("menuRenew"),
 		},
 		{
 			key:  SendReceiptCmdKey,
-			desc: "Upload receipt",
+			desc: Tr("menuUploadReceipt"),
 		},
 		{
 			key:  ResetCmdKey,
-			desc: "Reset Bot",
+			desc: Tr("menuReset"),
 		},
 	}
 
@@ -101,26 +101,26 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
 
 	if !msg.IsCommand() {
-		resp.Text = "Choose an item from the menu"
+		resp.Text = Tr("msgChooseFromMenu")
 		return &resp
 	}
 
 	// Extract the command from the Message.
 	switch msg.Command() {
 	case StartCmdKey:
-		resp.Text = "Hi!\nChoose an item from the menu."
+		resp.Text = Tr("msgChooseFromMenu")
 
 	case UsageCmdKey:
 		client, err := s.telegramService.getTgClient(msg.Chat.ID)
 		if msg.CommandArguments() == "" {
 			if err != nil {
-				resp.Text = "You're not registered in the system. If you already have an account with us, please enter your UID:"
+				resp.Text = Tr("msgNotRegisteredEnterLink")
 				s.state = RegUuidState
 			} else {
 				if client.Enabled {
 					resp.Text, _ = s.telegramService.GetClientUsage(client.Uid)
 				} else {
-					resp.Text = "You have already registered. We will contact you soon."
+					resp.Text = Tr("msgAlreadyRegistered")
 				}
 			}
 
@@ -142,7 +142,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	case RegisterCmdKey:
 		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
 		if err != nil || !crmEnabled {
-			resp.Text = "I don't know that command, choose an item from the menu"
+			resp.Text = Tr("msgIncorrectCmd")
 			break
 		}
 
@@ -152,7 +152,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		if client == nil {
 			accList, err := s.telegramService.settingService.GetTgCrmRegAccList()
 			if err != nil {
-				resp.Text = "Internal error"
+				resp.Text = Tr("msgInternalError")
 				break
 			}
 
@@ -175,15 +175,15 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			}
 
 			s.state = RegAccTypeState
-			resp.Text = "Please choose the package you would like to order.\n" + accList
+			resp.Text = Tr("msgChoosePackage") + "\n" + accList
 		} else {
-			resp.Text = "You cannot order more than one account per each telegram ID."
+			resp.Text = Tr("msgErrorMultipleAcc")
 		}
 
 	case RenewCmdKey:
 		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
 		if err != nil || !crmEnabled {
-			resp.Text = "I don't know that command, choose an item from the menu"
+			resp.Text = Tr("msgIncorrectCmd")
 			break
 		}
 
@@ -193,7 +193,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		if client != nil {
 			accList, err := s.telegramService.settingService.GetTgCrmRegAccList()
 			if err != nil {
-				resp.Text = "Internal error"
+				resp.Text = Tr("msgInternalError")
 				break
 			}
 
@@ -216,16 +216,16 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			}
 
 			s.state = RegAccTypeState
-			resp.Text = "Please choose the type of account you would like to order.\n" + accList
+			resp.Text = Tr("msgChoosePackage") + "\n" + accList
 		} else {
-			resp.Text = "You're not registered in the system. If you already have an account with us, please enter your UID:"
+			resp.Text = Tr("msgNotRegisteredEnterLink")
 			s.state = RegUuidState
 		}
 
 	case SendReceiptCmdKey:
 		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
 		if err != nil || !crmEnabled {
-			resp.Text = "I don't know that command, choose an item from the menu"
+			resp.Text = Tr("msgIncorrectCmd")
 			break
 		}
 
@@ -235,9 +235,9 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		if client != nil {
 			s.canAcceptPhoto = true
 			s.state = SendReceiptState
-			resp.Text = "Please send me a screenshot of your payment receipt here."
+			resp.Text = Tr("msgAttachReceipt")
 		} else {
-			resp.Text = "You're not registered in the system. You need to put an order first."
+			resp.Text = Tr("msgNotRegistered")
 		}
 
 	case ResetCmdKey:
@@ -245,18 +245,18 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		s.client = client
 		if client != nil {
 			s.state = ConfirmResetState
-			resp.Text = "Are you sure you want to reset your bot? You can link your VPN account to your Telegram ID again later."
+			resp.Text = Tr("msgConfirmReset")
 			resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData("Yes", "Yes"),
-				tgbotapi.NewInlineKeyboardButtonData("No", "No"),
+				tgbotapi.NewInlineKeyboardButtonData(Tr("yes"), "Yes"),
+				tgbotapi.NewInlineKeyboardButtonData(Tr("no"), "No"),
 			),
 			)
 		} else {
-			resp.Text = "You're not registered in the system. You need to put an order first."
+			resp.Text = Tr("msgNotRegistered")
 		}
 
 	default:
-		resp.Text = "I don't know that command, choose an item from the menu"
+		resp.Text = Tr("msgIncorrectCmd")
 
 	}
 	return &resp
@@ -272,7 +272,7 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
 	orderType := strings.TrimSpace(msg.Text)
 	if orderType == "" {
-		resp.Text = "Please choose a number from the list."
+		resp.Text = Tr("msgIncorrectPackageNo")
 		s.state = IdleState
 		return &resp
 	}
@@ -290,16 +290,16 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 		err := s.telegramService.PushTgClientMsg(s.clientRequest)
 		if err != nil {
 			logger.Error(err)
-			resp.Text = "Error during renewal"
+			resp.Text = Tr("msgInternalError")
 		} else {
-			resp.Text = "Thank you for your order. You will be contacted soon."
+			resp.Text = Tr("msgOrderRegistered")
 			s.state = IdleState
 		}
 		return &resp
 	}
 
 	s.state = RegEmailState
-	resp.Text = "Please enter a valid email address:"
+	resp.Text = Tr("msgEnterEmail")
 	return &resp
 }
 
@@ -312,13 +312,12 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
 	email := strings.TrimSpace(msg.Text)
 	if _, err := mail.ParseAddress(email); err != nil {
-		resp.Text = "Incorrect email. Please enter a valid email address:"
-		resp.ParseMode = "HTML"
+		resp.Text = Tr("msgIncorrectEmail")
 		return &resp
 	}
 
 	s.client.Email = email
-	resp.Text = "Would you like to add any notes?"
+	resp.Text = Tr("msgAddNotes")
 
 	s.state = RegNoteState
 	return &resp
@@ -338,15 +337,14 @@ func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
 	if err != nil {
 		logger.Error(err)
-		resp.Text = "Error during registration"
+		resp.Text = Tr("msgInternalError")
 	} else {
 		err := s.telegramService.PushTgClientMsg(s.clientRequest)
 		if err != nil {
 			logger.Error(err)
-			resp.Text = "Error during registration"
+			resp.Text = Tr("msgInternalError")
 		} else {
-			resp.Text = "Thank you for your order. You will be contacted soon."
-			resp.ParseMode = "HTML"
+			resp.Text = Tr("msgOrderRegistered")
 		}
 	}
 	s.state = IdleState
@@ -364,7 +362,7 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	uuid := re.FindString(msg.Text)
 
 	if !s.telegramService.CheckIfClientExists(uuid) {
-		resp.Text = "UUID doesn't exist in the database. E.g.\nfc3239ed-8f3b-4151-ff51-b183d5182142\nPlease enter a correct UUID:"
+		resp.Text = Tr("msgIncorrectUuid")
 		resp.ParseMode = "HTML"
 		return &resp
 	}
@@ -385,9 +383,9 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	err := s.telegramService.AddTgClient(s.client)
 	if err != nil {
 		logger.Error(err)
-		resp.Text = "Error during registration"
+		resp.Text = Tr("msgInternalError")
 	} else {
-		resp.Text = "Congratulations! You are now registered in the system."
+		resp.Text = Tr("msgRegisterSuccess")
 	}
 
 	s.state = IdleState
@@ -403,9 +401,9 @@ func SendReceiptState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConf
 	if msg.Photo != nil {
 		s.canAcceptPhoto = false
 		s.state = IdleState
-		resp.Text = "Thanks for your payment! We will review your order as soon as possible."
+		resp.Text = Tr("msgReceiptReceived")
 	} else {
-		resp.Text = "Please upload a screenshot of your payment receipt! It must be a picture format."
+		resp.Text = Tr("msgIncorrectReceipt")
 	}
 	return &resp
 }
@@ -415,12 +413,12 @@ func ConfirmResetState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageCon
 	if strings.ToLower(msg.Text) == "yes" {
 		err := s.telegramService.DeleteClient(msg.Chat.ID)
 		if err == nil {
-			resp.Text = "Telegram bot got successfully reset."
+			resp.Text = Tr("msgResetSuccess")
 		} else {
-			resp.Text = "Error while resetting the Telegram bot!"
+			resp.Text = Tr("msgInternalError")
 		}
 	} else {
-		resp.Text = "Cancelled!"
+		resp.Text = Tr("cancelled")
 	}
 
 	s.state = IdleState

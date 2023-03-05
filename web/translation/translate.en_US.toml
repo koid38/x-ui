@@ -211,7 +211,7 @@
 "telegramRegApprovalDesc" = "Will be sent to the user right after the request is approved"
 "telegramRegAccList" = "Package list for new orders"
 "telegramCrmTargetInbound" = "Target Inbound"
-"telegramCrmTargetInboundDesc" = "Inbound ID to add the approved TG client to"
+"telegramCrmTargetInboundDesc" = "Inbound ID to add the approved TG client to (not implemented yet)"
 
 [pages.setting.toasts]
 "modifySetting" = "modify setting"

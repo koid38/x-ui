@@ -91,7 +91,7 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 	finalMsg, err := t.settingService.GetTgCrmRegFinalMsg()
 	if err != nil {
 		logger.Error(err)
-		finalMsg = "Congratulations! Your account is created. You will soon receive an email."
+		finalMsg = Tr("msgAccCreateSuccess")
 	}
 	t.SendMsgToTgbot(client.ChatID, finalMsg)
 	return nil
@@ -111,7 +111,7 @@ func (t *TelegramService) RenewClient(client *model.TgClient) error {
 		return err
 	}
 
-	finalMsg := "Congratulations! Your account is renewed."
+	finalMsg := Tr("msgRenewSuccess")
 
 	t.SendMsgToTgbot(client.ChatID, finalMsg)
 	return nil
