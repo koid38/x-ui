@@ -150,24 +150,8 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		s.client = client
 
 		if client == nil {
-			accList, err := s.telegramService.settingService.GetTgCrmRegAccList()
-			if err != nil {
-				resp.Text = Tr("msgInternalError")
-				break
-			}
 
-			accList = strings.TrimSpace(accList)
-			var buttons []tgbotapi.KeyboardButton
-			accounts := strings.Split(accList, "\n")
-			for i := 1; i <= len(accounts); i++ {
-				buttons = append(buttons, tgbotapi.NewKeyboardButton(fmt.Sprint(i)))
-			}
-			if len(buttons) > 0 {
-				replyKeyboard := tgbotapi.NewOneTimeReplyKeyboard(
-					buttons,
-				)
-				resp.ReplyMarkup = replyKeyboard
-			}
+			s.showAccListKeyboard(&resp)
 
 			s.clientRequest = &model.TgClientMsg{
 				ChatID: msg.Chat.ID,
@@ -175,7 +159,6 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			}
 
 			s.state = RegAccTypeState
-			resp.Text = Tr("msgChoosePackage") + "\n" + accList
 		} else {
 			resp.Text = Tr("msgErrorMultipleAcc")
 		}
@@ -191,24 +174,8 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		s.client = client
 
 		if client != nil {
-			accList, err := s.telegramService.settingService.GetTgCrmRegAccList()
-			if err != nil {
-				resp.Text = Tr("msgInternalError")
-				break
-			}
 
-			accList = strings.TrimSpace(accList)
-			var buttons []tgbotapi.KeyboardButton
-			accounts := strings.Split(accList, "\n")
-			for i := 1; i <= len(accounts); i++ {
-				buttons = append(buttons, tgbotapi.NewKeyboardButton(fmt.Sprint(i)))
-			}
-			if len(buttons) > 0 {
-				replyKeyboard := tgbotapi.NewOneTimeReplyKeyboard(
-					buttons,
-				)
-				resp.ReplyMarkup = replyKeyboard
-			}
+			s.showAccListKeyboard(&resp)
 
 			s.clientRequest = &model.TgClientMsg{
 				ChatID: s.client.ChatID,
@@ -216,7 +183,6 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			}
 
 			s.state = RegAccTypeState
-			resp.Text = Tr("msgChoosePackage") + "\n" + accList
 		} else {
 			resp.Text = Tr("msgNotRegisteredEnterLink")
 			s.state = RegUuidState
@@ -433,4 +399,24 @@ func abort(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	s.client = nil
 	s.canAcceptPhoto = false
 	return IdleState(s, msg)
+}
+
+func (s *TgSession) showAccListKeyboard(resp *tgbotapi.MessageConfig) {
+	accList, err := s.telegramService.settingService.GetTgCrmRegAccList()
+	if err != nil {
+		resp.Text = Tr("msgInternalError")
+		return
+	}
+
+	accList = strings.TrimSpace(accList)
+	accounts := strings.Split(accList, "\n")
+	row := tgbotapi.NewInlineKeyboardRow()
+	for i := 1; i <= len(accounts); i++ {
+		row = append(row, tgbotapi.NewInlineKeyboardButtonData(fmt.Sprint(i), fmt.Sprint(i)))
+	}
+	if len(row) > 0 {
+		resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(row)
+	}
+
+	resp.Text = Tr("msgChoosePackage") + "\n" + accList
 }
