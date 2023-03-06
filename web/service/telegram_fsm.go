@@ -361,9 +361,8 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	re := regexp.MustCompile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 	uuid := re.FindString(msg.Text)
 
-	if !s.telegramService.CheckIfClientExists(uuid) {
+	if uuid == "" || !s.telegramService.CheckIfClientExists(uuid) {
 		resp.Text = Tr("msgIncorrectUuid")
-		resp.ParseMode = "HTML"
 		return &resp
 	}
 	s.client = &model.TgClient{

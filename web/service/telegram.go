@@ -44,6 +44,9 @@ func (j *TelegramService) GetClientUsage(id string) (string, error) {
 }
 
 func (j *TelegramService) CheckIfClientExists(id string) bool {
+	if strings.TrimSpace(id) == "" {
+		return false
+	}
 	_, err := j.inboundService.GetClientTrafficById(id)
 	if err != nil {
 		return false
@@ -138,7 +141,7 @@ func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 }
 
 func (t *TelegramService) replaceMarkup(msg *string, tgClient *model.TgClient) string {
-	replacer := strings.NewReplacer("<UID>", tgClient.Uid, "<CHAT_ID>", strconv.FormatInt(tgClient.ChatID, 10))
+	replacer := strings.NewReplacer("<UUID>", tgClient.Uid, "<CHAT_ID>", strconv.FormatInt(tgClient.ChatID, 10))
 	return replacer.Replace(*msg)
 }
 

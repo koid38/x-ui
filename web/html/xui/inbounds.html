@@ -132,7 +132,7 @@
                     <a-card hoverable>
                         <a-table :columns="tgMsgColumns" :row-key="tgMsg => tgMsg.chatId"
                                  :data-source="tgClientMsgs"
-                                 :loading="spinning" :scroll="{ x: 800 }"
+                                 :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
                                  @change="() => getTgMsgClients()">
@@ -149,7 +149,7 @@
                     <a-card hoverable>
                         <a-table :columns="tgClientColumns" :row-key="tgClient => tgClient.chatId"
                                  :data-source="tgClients"
-                                 :loading="spinning" :scroll="{ x: 800 }"
+                                 :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
                                  @change="() => getTgClients()">
