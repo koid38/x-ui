@@ -177,7 +177,12 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 			}
 
 			resp := j.telegramService.HandleMessage(&tgbotapi.Message{
-				Chat: &tgbotapi.Chat{ID: update.CallbackQuery.Message.Chat.ID},
+				Chat: &tgbotapi.Chat{
+					ID:        update.CallbackQuery.Message.Chat.ID,
+					UserName:  update.CallbackQuery.From.UserName,
+					FirstName: update.CallbackQuery.From.FirstName,
+					LastName:  update.CallbackQuery.From.LastName,
+				},
 				Text: update.CallbackQuery.Data,
 			})
 
