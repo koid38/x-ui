@@ -91,6 +91,7 @@
 "totalDownUp" = "Total uploads/downloads"
 "totalUsage" = "Total usage"
 "inboundCount" = "Number of inbound"
+"clientCount" = "Number of clients"
 "operate" = "Actions"
 "enable" = "enable"
 "remark" = "remark"
@@ -126,7 +127,7 @@
 "keyPath" = "key file path"
 "keyContent" = "key content"
 "client" = "Client"
-"uid" = "UID"
+"uid" = "UUID"
 
 [pages.inbounds.tg]
 "enabled" = "Enabled"

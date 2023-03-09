@@ -38,6 +38,10 @@
                                 {{ i18n "pages.inbounds.inboundCount" }}：
                                 <a-tag color="green">[[ dbInbounds.length ]]</a-tag>
                             </a-col>
+                            <a-col :xs="24" :sm="24" :lg="12">
+                                {{ i18n "pages.inbounds.clientCount" }}：
+                                <a-tag color="green">[[ clientCount ]]</a-tag>
+                            </a-col>
                         </a-row>
                     </a-card>
                 </transition>
@@ -135,7 +139,7 @@
                                  :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
-                                 @change="() => getTgMsgClients()">
+                                 @change="() => getTgClientMsgs()">
                             <template slot="actions" slot-scope="text, tgMsg">
                                 <a-icon v-if="tgMsg.type == 'registration'" type="check" @click="approveTgClient(tgMsg, true)" style="font-size: 25px; color:green"></a-icon>
                                 <a-icon v-if="tgMsg.type == 'renewal'" type="check" @click="approveTgClient(tgMsg, false)" style="font-size: 25px; color:green"></a-icon>
@@ -184,6 +188,7 @@ const columns = [
 ];
 
     const innerColumns = [
+    { title: 'ID', width: 20, scopedSlots: { customRender: 'rowIndex' } },
     { title: '{{ i18n "pages.inbounds.client" }}', width: 80, scopedSlots: { customRender: 'client' } },
     { title: '{{ i18n "pages.inbounds.traffic" }}', width: 100, scopedSlots: { customRender: 'traffic' } },
     { title: '{{ i18n "pages.inbounds.expireDate" }}', width: 80, scopedSlots: { customRender: 'expiryTime' } },
@@ -229,6 +234,7 @@ const columns = [
             tgClients: [],
             tgClientMsgs: [],
             searchKey: '',
+            clientCount: 0,
         },
         methods: {
             loading(spinning=true) {
@@ -246,10 +252,19 @@ const columns = [
             setInbounds(dbInbounds) {
                 this.inbounds.splice(0);
                 this.dbInbounds.splice(0);
+                this.clientCount = 0;
                 for (const inbound of dbInbounds) {
                     const dbInbound = new DBInbound(inbound);
-                    this.inbounds.push(dbInbound.toInbound());
+                    const xrayInbound = dbInbound.toInbound()
+                    this.inbounds.push(xrayInbound);
                     this.dbInbounds.push(dbInbound);
+
+                    if(dbInbound.protocol == Protocols.VLESS) {
+                        this.clientCount += xrayInbound.settings.vlesses.length;
+                    } else if(inbound.protocol == Protocols.VMESS) {
+                        this.clientCount += xrayInbound.settings.vmesses.length;
+                    }
+
                 }
             },
             searchInbounds(key) {

@@ -1,4 +1,7 @@
 {{define "form/client_row"}}
+<template slot="rowIndex" slot-scope="text, record, index">
+    [[index+1]]
+</template>
 <template slot="client" slot-scope="text, client">
     [[ client.email ]]
     <a-tag v-if="!isClientEnabled(record, client.email)" color="red"> expired</a-tag>
