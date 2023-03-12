@@ -41,6 +41,9 @@ type AllSetting struct {
 	TgClientRegAccList       string `json:"tgClientRegAccList" form:"tgClientRegAccList"`
 	TgClientRegFinalMsg      string `json:"tgClientRegFinalMsg" form:"tgClientRegFinalMsg"`
 	TelegramCrmTargetInbound int    `json:"telegramCrmTargetInbound" form:"telegramCrmTargetInbound"`
+	MasterEnabled            bool   `json:"masterEnabled" form:"masterEnabled"`
+	SlaveIps                 string `json:"slaveIps" form:"slaveIps"`
+	SlaveRootPass            string `json:"slaveRootPass" form:"slaveRootPass"`
 
 	TimeLocation string `json:"timeLocation" form:"timeLocation"`
 }

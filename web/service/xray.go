@@ -6,10 +6,11 @@ import (
 	"sync"
 	"x-ui/logger"
 	"x-ui/xray"
+
 	"go.uber.org/atomic"
 )
 
-var p *xray.Process
+var p = make([]xray.Process, 0)
 var lock sync.Mutex
 var isNeedXrayRestart atomic.Bool
 var result string
@@ -20,14 +21,14 @@ type XrayService struct {
 }
 
 func (s *XrayService) IsXrayRunning() bool {
-	return p != nil && p.IsRunning()
+	return len(p) > 0 && p[0].IsRunning()
 }
 
 func (s *XrayService) GetXrayErr() error {
-	if p == nil {
+	if len(p) == 0 {
 		return nil
 	}
-	return p.GetErr()
+	return p[0].GetErr()
 }
 
 func (s *XrayService) GetXrayResult() string {
@@ -37,18 +38,19 @@ func (s *XrayService) GetXrayResult() string {
 	if s.IsXrayRunning() {
 		return ""
 	}
-	if p == nil {
+	if len(p) == 0 {
 		return ""
 	}
-	result = p.GetResult()
+	logger.Error("len(p):", len(p))
+	result = p[0].GetResult()
 	return result
 }
 
 func (s *XrayService) GetXrayVersion() string {
-	if p == nil {
+	if len(p) == 0 {
 		return "Unknown"
 	}
-	return p.GetVersion()
+	return p[0].GetVersion()
 }
 func RemoveIndex(s []interface{}, index int) []interface{} {
 	return append(s[:index], s[index+1:]...)
@@ -79,25 +81,24 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 		// get settings clients
 		settings := map[string]interface{}{}
 		json.Unmarshal([]byte(inbound.Settings), &settings)
-		clients, ok :=  settings["clients"].([]interface{})
+		clients, ok := settings["clients"].([]interface{})
 		if ok {
 			// check users active or not
 
 			clientStats := inbound.ClientStats
 			for _, clientTraffic := range clientStats {
-				
+
 				for index, client := range clients {
 					c := client.(map[string]interface{})
 					if c["email"] == clientTraffic.Email {
-						if ! clientTraffic.Enable {
-							clients = RemoveIndex(clients,index)
-							logger.Info("Remove Inbound User",c["email"] ,"due the expire or traffic limit")
+						if !clientTraffic.Enable {
+							clients = RemoveIndex(clients, index)
+							logger.Info("Remove Inbound User", c["email"], "due the expire or traffic limit")
 
 						}
 
 					}
 				}
-		
 
 			}
 			settings["clients"] = clients
@@ -105,7 +106,7 @@ func (s *XrayService) GetXrayConfig() (*xray.Config, error) {
 			if err != nil {
 				return nil, err
 			}
-		
+
 			inbound.Settings = string(modifiedSettings)
 		}
 		inboundConfig := inbound.GenXrayInboundConfig()
@@ -118,38 +119,77 @@ func (s *XrayService) GetXrayTraffic() ([]*xray.Traffic, []*xray.ClientTraffic, 
 	if !s.IsXrayRunning() {
 		return nil, nil, errors.New("xray is not running")
 	}
-	return p.GetTraffic(true)
+	return p[0].GetTraffic(true)
 }
 
 func (s *XrayService) RestartXray(isForce bool) error {
 	lock.Lock()
 	defer lock.Unlock()
-	logger.Debug("restart xray, force:", isForce)
+	logger.Debug("Restart xray, force:", isForce)
 
 	xrayConfig, err := s.GetXrayConfig()
 	if err != nil {
 		return err
 	}
 
-	if p != nil && p.IsRunning() {
-		if !isForce && p.GetConfig().Equals(xrayConfig) {
-			logger.Debug("not need to restart xray")
+	if len(p) > 0 && p[0].IsRunning() {
+		if !isForce && p[0].GetConfig().Equals(xrayConfig) {
+			logger.Debug("No need to restart xray")
 			return nil
 		}
-		p.Stop()
+		for i := range p {
+			p[i].Stop()
+		}
 	}
 
-	p = xray.NewProcess(xrayConfig)
 	result = ""
-	return p.Start()
+	masterEnabled, err := s.settingService.GetMasterEnabled()
+	if err != nil {
+		return err
+	}
+
+	logger.Error("Master panel enabled:", masterEnabled)
+
+	if masterEnabled {
+
+		slaveIps, err := s.settingService.GetSlaveIps()
+		if err != nil {
+			return err
+		}
+		slaveRootPassword, err := s.settingService.GetSlaveRootPass()
+		if err != nil {
+			return err
+		}
+
+		p = p[:0]
+		for i, host := range slaveIps {
+			p = append(p, xray.NewRemoteProcess(xrayConfig, host, slaveRootPassword))
+			res := p[i].Start()
+			if err == nil {
+				err = res
+			}
+		}
+		return err
+	}
+
+	p = []xray.Process{xray.NewLocalProcess(xrayConfig)}
+	return p[0].Start()
 }
 
 func (s *XrayService) StopXray() error {
 	lock.Lock()
 	defer lock.Unlock()
 	logger.Debug("stop xray")
+
+	err := error(nil)
 	if s.IsXrayRunning() {
-		return p.Stop()
+		for i := range p {
+			res := p[i].Stop()
+			if err == nil {
+				err = res
+			}
+		}
+		return err
 	}
 	return errors.New("xray is not running")
 }

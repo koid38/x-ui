@@ -10,7 +10,6 @@ import (
 
 type TelegramController struct {
 	telegramService service.TelegramService
-	xrayService     service.XrayService
 }
 
 func NewTelegramController(g *gin.RouterGroup) *TelegramController {

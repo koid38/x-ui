@@ -203,6 +203,13 @@
 "telegramNotifyTimeDesc" = "Using Crontab timing format, restart the panel to take effect"
 "timeZonee" = "Time Zone"
 "timeZoneDesc" = "The scheduled task runs according to the time in the time zone, and restarts the panel to take effect"
+"masterPanel" = "Master Panel"
+"masterEnabled" = "Master Panel"
+"masterEnabledDesc" = "Acts as master panel and controls multiple servers"
+"slaveIps" = "Slave server IPs"
+"slaveIpsDesc" = "Comma separated list of servers you want to control from this panel"
+"slaveRootPass" = "Server's root password"
+"slaveRootPassDesc" = "Slave server's root password (all must use the same password)"
 
 [pages.setting.tg]
 "telegramCrm" = "Telegram CRM"

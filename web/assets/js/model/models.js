@@ -174,6 +174,9 @@ class AllSetting {
         this.tgClientRegAccList = "";
         this.tgClientRegFinalMsg = "";
         this.telegramCrmTargetInbound = 1;
+        this.masterEnabled = false
+        this.slaveIps = "";
+        this.slaveRootPass = "";
 
         this.timeLocation = "Asia/Shanghai";
 

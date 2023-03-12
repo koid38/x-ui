@@ -34,6 +34,7 @@ jobs:
         run: |
           CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o xui-release -v main.go
           mkdir x-ui
+          cp -R nginx x-ui/
           cp -R translation x-ui/
           cp xui-release x-ui/xui-release
           cp x-ui.service x-ui/x-ui.service
@@ -79,6 +80,7 @@ jobs:
           sudo apt install gcc-aarch64-linux-gnu
           CGO_ENABLED=1 GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc go build -o xui-release -v main.go
           mkdir x-ui
+          cp -R nginx x-ui/
           cp -R translation x-ui/
           cp xui-release x-ui/xui-release
           cp x-ui.service x-ui/x-ui.service
@@ -123,6 +125,7 @@ jobs:
           sudo apt install gcc-s390x-linux-gnu -y
           CGO_ENABLED=1 GOOS=linux GOARCH=s390x CC=s390x-linux-gnu-gcc go build -o xui-release -v main.go
           mkdir x-ui
+          cp -R nginx x-ui/
           cp -R translation x-ui/
           cp xui-release x-ui/xui-release
           cp x-ui.service x-ui/x-ui.service

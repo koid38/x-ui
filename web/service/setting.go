@@ -37,6 +37,9 @@ var defaultValueMap = map[string]string{
 	"tgClientRegFinalMsg":      "Congratulations! Your account is created. You will soon receive an email.",
 	"tgClientRegAccList":       "1- One user 1 month\n2- Two users 2 months",
 	"telegramCrmTargetInbound": "1",
+	"masterEnabled":            "false",
+	"slaveIps":                 "",
+	"slaveRootPass":            "",
 }
 
 type SettingService struct {
@@ -283,6 +286,22 @@ func (s *SettingService) GetTimeLocation() (*time.Location, error) {
 		return time.LoadLocation(defaultLocation)
 	}
 	return location, nil
+}
+
+func (s *SettingService) GetMasterEnabled() (bool, error) {
+	return s.getBool("masterEnabled")
+}
+
+func (s *SettingService) GetSlaveIps() ([]string, error) {
+	ips, err := s.getString("slaveIps")
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(ips, ","), err
+}
+
+func (s *SettingService) GetSlaveRootPass() (string, error) {
+	return s.getString("slaveRootPass")
 }
 
 /*********************************************************
