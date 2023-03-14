@@ -43,10 +43,6 @@ const (
 func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 	commands := []commandEntity{
 		{
-			key:  StartCmdKey,
-			desc: Tr("menuStart"),
-		},
-		{
 			key:  UsageCmdKey,
 			desc: Tr("menuGetUsage"),
 		},
@@ -258,6 +254,12 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 			logger.Error(err)
 			resp.Text = Tr("msgInternalError")
 		} else {
+			s.telegramService.SendMsgToAdmin("New account renewal request! Please visit the panel.")
+			if err != nil {
+				logger.Error("RegNoteState failed to send msg to admin:", err)
+			}
+
+			s.canAcceptPhoto = true // allow the client to send receipts
 			resp.Text = Tr("msgOrderRegistered")
 			s.state = IdleState
 		}
@@ -313,6 +315,14 @@ func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 			resp.Text = Tr("msgOrderRegistered")
 		}
 	}
+
+	s.telegramService.SendMsgToAdmin("New account registration request! Please visit the panel.")
+	if err != nil {
+		logger.Error("RegNoteState failed to send msg to admin:", err)
+	}
+
+	s.canAcceptPhoto = true // allow the client to send receipts
+
 	s.state = IdleState
 	return &resp
 }

@@ -96,7 +96,7 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 		logger.Error(err)
 		finalMsg = Tr("msgAccCreateSuccess")
 	}
-	t.SendMsgToTgbot(client.ChatID, finalMsg)
+	t.SendMsgToTgBot(client.ChatID, finalMsg)
 	return nil
 }
 
@@ -116,7 +116,7 @@ func (t *TelegramService) RenewClient(client *model.TgClient) error {
 
 	finalMsg := Tr("msgRenewSuccess")
 
-	t.SendMsgToTgbot(client.ChatID, finalMsg)
+	t.SendMsgToTgBot(client.ChatID, finalMsg)
 	return nil
 }
 
@@ -159,7 +159,7 @@ func (t *TelegramService) CanAcceptPhoto(chatId int64) bool {
 	return TgSessions[chatId].canAcceptPhoto
 }
 
-func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
+func (t *TelegramService) SendMsgToTgBot(chatId int64, msg string) error {
 
 	tgClient, err := t.getTgClient(chatId)
 	if err == nil {
@@ -168,19 +168,29 @@ func (t *TelegramService) SendMsgToTgbot(chatId int64, msg string) error {
 
 	tgBottoken, err := t.settingService.GetTgBotToken()
 	if err != nil || tgBottoken == "" {
-		logger.Warning("sendMsgToTgbot failed,GetTgBotToken fail:", err)
+		logger.Error("SendMsgToTgBot failed, GetTgBotToken fail:", err)
 		return err
 	}
 	bot, err := tgbotapi.NewBotAPI(tgBottoken)
 	if err != nil {
-		fmt.Println("get tgbot error:", err)
+		logger.Error("SendMsgToTgBot failed, NewBotAPI fail:", err)
 		return err
 	}
-	bot.Debug = true
-	fmt.Printf("Authorized on account %s", bot.Self.UserName)
+
 	info := tgbotapi.NewMessage(chatId, msg)
 	info.ParseMode = "HTML"
+	info.DisableWebPagePreview = true
 	bot.Send(info)
+	return nil
+}
+
+func (t *TelegramService) SendMsgToAdmin(msg string) error {
+	adminId, err := t.settingService.GetTgBotChatId()
+	if err != nil {
+		logger.Error("SendMsgToAdmin failed, NewBotAPI fail:", err)
+		return err
+	}
+	t.SendMsgToTgBot(int64(adminId), msg)
 	return nil
 }
 

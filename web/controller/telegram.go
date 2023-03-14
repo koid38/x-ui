@@ -46,12 +46,12 @@ func (a *TelegramController) getClients(c *gin.Context) {
 
 func (a *TelegramController) getClientMsgs(c *gin.Context) {
 	// user := session.GetLoginUser(c)
-	clients, err := a.telegramService.GetTgClientMsgs()
+	msgs, err := a.telegramService.GetTgClientMsgs()
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
 		return
 	}
-	jsonObj(c, clients, nil)
+	jsonObj(c, msgs, nil)
 }
 
 func (a *TelegramController) sendMsg(c *gin.Context) {
@@ -63,7 +63,7 @@ func (a *TelegramController) sendMsg(c *gin.Context) {
 		return
 	}
 
-	err = a.telegramService.SendMsgToTgbot(clientMsg.ChatID, clientMsg.Msg)
+	err = a.telegramService.SendMsgToTgBot(clientMsg.ChatID, clientMsg.Msg)
 	jsonMsgObj(c, I18n(c, "sendMsg"), clientMsg.ChatID, err)
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)

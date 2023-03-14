@@ -175,7 +175,7 @@
 "panelConfig" = "Panel Configuration"
 "userSetting" = "User Setting"
 "xrayConfiguration" = "xray Configuration"
-"TGReminder" = "TG Reminder Related Settings"
+"TGReminder" = "Telegram Bot"
 "otherSetting" = "Other Setting"
 "panelListeningIP" = "Panel listening IP"
 "panelListeningIPDesc" = "Leave blank by default to monitor all IPs, restart the panel to take effect"

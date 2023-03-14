@@ -56,7 +56,7 @@
                                  :loading="spinning" :scroll="{ x: 1200 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
-                                 @change="() => getDBInbounds()">
+                                 @change="() => getDBData()">
                             <template slot="action" slot-scope="text, dbInbound">
                                 <a-icon type="edit" style="font-size: 25px" @click="openEditInbound(dbInbound)"></a-icon>
                                 <a-dropdown :trigger="['click']">
@@ -139,7 +139,7 @@
                                  :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
-                                 @change="() => getTgClientMsgs()">
+                                 @change="() => getDBData()">
                             <template slot="actions" slot-scope="text, tgMsg">
                                 <a-icon v-if="tgMsg.type == 'registration'" type="check" @click="approveTgClient(tgMsg, true)" style="font-size: 25px; color:green"></a-icon>
                                 <a-icon v-if="tgMsg.type == 'renewal'" type="check" @click="approveTgClient(tgMsg, false)" style="font-size: 25px; color:green"></a-icon>
@@ -156,7 +156,7 @@
                                  :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
                                  style="margin-top: 20px"
-                                 @change="() => getTgClients()">
+                                 @change="() => getDBData()">
                             <template slot="actions" slot-scope="text, tgClient">
                                 <a-icon type="message" @click="sendMsgToClient(tgClient.chatId)" style="font-size: 25px"></a-icon>
                                 <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
@@ -240,14 +240,27 @@ const columns = [
             loading(spinning=true) {
                 this.spinning = spinning;
             },
-            async getDBInbounds() {
+            async getDBData() {
                 this.loading();
-                const msg = await HttpUtil.post('/xui/inbound/list');
-                this.loading(false);
-                if (!msg.success) {
+                const inboundsMsg = await HttpUtil.post('/xui/inbound/list');
+                if (!inboundsMsg.success) {
                     return;
                 }
-                this.setInbounds(msg.obj);
+
+                const clientListMsg = await HttpUtil.post('/xui/tgClients/list');
+                if (!clientListMsg.success) {
+                    return;
+                }
+
+                const clientMsgsMsg = await HttpUtil.post('/xui/tgClients/listMsgs');
+                if (!clientMsgsMsg.success) {
+                    return;
+                }
+                this.loading(false);
+
+                this.setInbounds(inboundsMsg.obj);
+                this.setTgClients(clientListMsg.obj);
+                this.setTgClientMsgs(clientMsgsMsg.obj);
             },
             setInbounds(dbInbounds) {
                 this.inbounds.splice(0);
@@ -396,9 +409,7 @@ const columns = [
             async submit(url, data, modal) {
                 const msg = await HttpUtil.postWithModal(url, data, modal);
                 if (msg.success) {
-                    await this.getDBInbounds();
-                    await this.getTgClients();
-                    await this.getTgClientMsgs();
+                    await this.getDBData();
                 }
                 return msg
             },
@@ -464,25 +475,6 @@ const columns = [
                         }
                     }
                 }
-            },
-
-            async getTgClients() {
-                this.loading();
-                const msg = await HttpUtil.post('/xui/tgClients/list');
-                this.loading(false);
-                if (!msg.success) {
-                    return;
-                }
-                this.setTgClients(msg.obj);
-            },
-            async getTgClientMsgs() {
-                this.loading();
-                const msg = await HttpUtil.post('/xui/tgClients/listMsgs');
-                this.loading(false);
-                if (!msg.success) {
-                    return;
-                }
-                this.setTgClientMsgs(msg.obj);
             },
             setTgClients(tgClients) {
                 this.tgClients.splice(0);
@@ -570,9 +562,7 @@ const columns = [
             }
         },
         mounted() {
-            this.getDBInbounds();
-            this.getTgClients();
-            this.getTgClientMsgs();
+            this.getDBData();
         },
         computed: {
             total() {
