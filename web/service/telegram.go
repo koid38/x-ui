@@ -18,11 +18,13 @@ type TelegramService struct {
 	settingService SettingService
 }
 
-func (j *TelegramService) GetClientUsage(id string) (string, error) {
+func (j *TelegramService) GetClientUsage(chatId int64, id string) *tgbotapi.MessageConfig {
+	resp := tgbotapi.NewMessage(chatId, "")
 	traffic, err := j.inboundService.GetClientTrafficById(id)
 	if err != nil {
 		logger.Error(err)
-		return "Incorrect UUID!", err
+		resp.Text = Tr("incorrectUuid")
+		return &resp
 	}
 	expiryTime := ""
 	if traffic.ExpiryTime == 0 {
@@ -36,11 +38,16 @@ func (j *TelegramService) GetClientUsage(id string) (string, error) {
 	} else {
 		total = fmt.Sprintf("%s", common.FormatTraffic((traffic.Total)))
 	}
-	output := fmt.Sprintf("💡 Active: %t\r\n📧 Email: %s\r\n🔼 Upload↑: %s\r\n🔽 Download↓: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n",
-		traffic.Enable, traffic.Email, common.FormatTraffic(traffic.Up), common.FormatTraffic(traffic.Down), common.FormatTraffic((traffic.Up + traffic.Down)),
+	resp.Text = fmt.Sprintf("💡 Active: %t\r\n📧 Name: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n",
+		traffic.Enable, traffic.Email, common.FormatTraffic((traffic.Up + traffic.Down)),
 		total, expiryTime)
 
-	return output, err
+	resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(Tr("update"), "update:"+id),
+		),
+	)
+	return &resp
 }
 
 func (j *TelegramService) CheckIfClientExists(id string) bool {
@@ -150,6 +157,30 @@ func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.Message
 		TgSessions[msg.Chat.ID] = InitFSM()
 	}
 	return TgSessions[msg.Chat.ID].state(TgSessions[msg.Chat.ID], msg)
+}
+
+func (t *TelegramService) HandleCallback(callback *tgbotapi.CallbackQuery) (resp *tgbotapi.MessageConfig, delete bool, update bool) {
+
+	if strings.HasPrefix(callback.Data, "update:") {
+		resp = t.GetClientUsage(callback.Message.Chat.ID, strings.TrimPrefix(callback.Data, "update:"))
+		delete = false
+		update = true
+		return
+	}
+
+	resp = t.HandleMessage(&tgbotapi.Message{
+		Chat: &tgbotapi.Chat{
+			ID:        callback.Message.Chat.ID,
+			UserName:  callback.From.UserName,
+			FirstName: callback.From.FirstName,
+			LastName:  callback.From.LastName,
+		},
+		Text: callback.Data,
+	})
+	delete = true
+	update = false
+
+	return
 }
 
 func (t *TelegramService) CanAcceptPhoto(chatId int64) bool {

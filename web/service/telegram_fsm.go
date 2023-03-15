@@ -114,14 +114,14 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 				s.state = RegUuidState
 			} else {
 				if client.Enabled {
-					resp.Text, _ = s.telegramService.GetClientUsage(client.Uid)
+					resp = *s.telegramService.GetClientUsage(msg.Chat.ID, client.Uid)
 				} else {
 					resp.Text = Tr("msgAlreadyRegistered")
 				}
 			}
 
 		} else {
-			resp.Text, err = s.telegramService.GetClientUsage(msg.CommandArguments())
+			resp = *s.telegramService.GetClientUsage(msg.Chat.ID, msg.CommandArguments())
 
 			if client == nil && err == nil {
 				name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName

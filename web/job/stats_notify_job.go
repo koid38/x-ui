@@ -171,28 +171,34 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	for update := range updates {
 		if update.Message == nil {
-			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data)
+
+			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Success!")
 			if _, err := bot.Request(callback); err != nil {
 				logger.Error(err)
 			}
 
-			resp := j.telegramService.HandleMessage(&tgbotapi.Message{
-				Chat: &tgbotapi.Chat{
-					ID:        update.CallbackQuery.Message.Chat.ID,
-					UserName:  update.CallbackQuery.From.UserName,
-					FirstName: update.CallbackQuery.From.FirstName,
-					LastName:  update.CallbackQuery.From.LastName,
-				},
-				Text: update.CallbackQuery.Data,
-			})
+			resp, del, upd := j.telegramService.HandleCallback(update.CallbackQuery)
 
-			if _, err := bot.Send(resp); err != nil {
+			if upd {
+				updateMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, resp.Text)
+				keyboard := resp.ReplyMarkup.(tgbotapi.InlineKeyboardMarkup)
+				updateMsg.ReplyMarkup = &keyboard
+
+				if _, err := bot.Request(updateMsg); err != nil {
+					logger.Error(err)
+				}
+			} else if _, err := bot.Send(resp); err != nil {
 				logger.Warning(err)
+			}
+
+			if del {
+				deleteMsg := tgbotapi.NewDeleteMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID)
+				if _, err := bot.Request(deleteMsg); err != nil {
+					logger.Error(err)
+				}
 			}
 			continue
 		}
-
-		tgbotapi.NewRemoveKeyboard(true)
 
 		if update.Message.Photo != nil && j.telegramService.CanAcceptPhoto(update.Message.Chat.ID) {
 			adminId, _ := j.settingService.GetTgBotChatId()

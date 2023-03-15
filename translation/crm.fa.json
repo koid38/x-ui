@@ -28,7 +28,9 @@
 	"msgRenewSuccess": "اشتراک شما با موفقیت تمدید شد.",
 	"msgAccCreateSuccess": "اشتراک شما با موفقیت ایجاد شد.",
 	
+	"incorrectUuid": "شناسه کاربری صحیح نمی باشد.",
 	"yes": "بله",
 	"no": "خیر",
-	"cancelled": "انصراف!"
+	"cancelled": "انصراف!",
+	"update": "بروز رسانی"
 }

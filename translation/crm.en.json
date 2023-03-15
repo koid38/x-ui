@@ -28,8 +28,10 @@
 	"msgRenewSuccess": "Congratulations! Your account is renewed.",
 	"msgAccCreateSuccess": "Congratulations! Your account is created. You will soon receive an email.",
 	
+	"incorrectUuid": "Incorrect UUID!",
 	"yes": "Yes",
 	"no": "No",
-	"cancelled": "Cancelled!"
+	"cancelled": "Cancelled!",
+	"update": "Update"
 }
 
