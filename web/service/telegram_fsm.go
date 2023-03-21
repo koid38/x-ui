@@ -25,53 +25,70 @@ type stateFn func(*TgSession, *tgbotapi.Message) *tgbotapi.MessageConfig
 
 type (
 	commandEntity struct {
-		key  string
-		desc string
-		//		action func(upd tgbotapi.Update)
+		key         string
+		desc        string
+		crmFunction bool
 	}
 )
 
 const (
-	StartCmdKey       = string("start")
-	UsageCmdKey       = string("usage")
-	RegisterCmdKey    = string("register")
-	RenewCmdKey       = string("renew")
-	SendReceiptCmdKey = string("receipt")
-	ResetCmdKey       = string("reset")
+	StartCmdKey          = string("start")
+	UsageCmdKey          = string("usage")
+	RegisterCmdKey       = string("register")
+	RenewCmdKey          = string("renew")
+	SendReceiptCmdKey    = string("receipt")
+	ReferToFriendsCmdKey = string("refer")
+	ContactSupportCmdKey = string("support")
+	ResetCmdKey          = string("reset")
 )
 
 func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 	commands := []commandEntity{
 		{
-			key:  UsageCmdKey,
-			desc: Tr("menuGetUsage"),
+			key:         UsageCmdKey,
+			desc:        Tr("menuGetUsage"),
+			crmFunction: false,
 		},
 		{
-			key:  RegisterCmdKey,
-			desc: Tr("menuOrder"),
+			key:         RegisterCmdKey,
+			desc:        Tr("menuOrder"),
+			crmFunction: true,
 		},
 		{
-			key:  RenewCmdKey,
-			desc: Tr("menuRenew"),
+			key:         RenewCmdKey,
+			desc:        Tr("menuRenew"),
+			crmFunction: true,
 		},
 		{
-			key:  SendReceiptCmdKey,
-			desc: Tr("menuUploadReceipt"),
+			key:         SendReceiptCmdKey,
+			desc:        Tr("menuUploadReceipt"),
+			crmFunction: true,
 		},
 		{
-			key:  ResetCmdKey,
-			desc: Tr("menuReset"),
+			key:         ReferToFriendsCmdKey,
+			desc:        Tr("menuRefer"),
+			crmFunction: true,
+		},
+		{
+			key:         ContactSupportCmdKey,
+			desc:        Tr("menuSupport"),
+			crmFunction: false,
+		},
+		{
+			key:         ResetCmdKey,
+			desc:        Tr("menuReset"),
+			crmFunction: false,
 		},
 	}
 
 	menuItemCount := len(commands)
 	if !crmEnabled {
-		menuItemCount -= 3
+		menuItemCount -= 4
 	}
 
 	tgCommands := make([]tgbotapi.BotCommand, 0, menuItemCount)
 	for _, cmd := range commands {
-		if (cmd.key == RegisterCmdKey || cmd.key == RenewCmdKey || cmd.key == SendReceiptCmdKey) && !crmEnabled {
+		if cmd.crmFunction && !crmEnabled {
 			continue
 		}
 		tgCommands = append(tgCommands, tgbotapi.BotCommand{
@@ -99,6 +116,11 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	if !msg.IsCommand() {
 		resp.Text = Tr("msgChooseFromMenu")
 		return &resp
+	}
+
+	crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
+	if err != nil {
+		crmEnabled = false
 	}
 
 	// Extract the command from the Message.
@@ -136,8 +158,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		}
 
 	case RegisterCmdKey:
-		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
-		if err != nil || !crmEnabled {
+		if !crmEnabled {
 			resp.Text = Tr("msgIncorrectCmd")
 			break
 		}
@@ -160,8 +181,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		}
 
 	case RenewCmdKey:
-		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
-		if err != nil || !crmEnabled {
+		if !crmEnabled {
 			resp.Text = Tr("msgIncorrectCmd")
 			break
 		}
@@ -185,8 +205,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		}
 
 	case SendReceiptCmdKey:
-		crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
-		if err != nil || !crmEnabled {
+		if !crmEnabled {
 			resp.Text = Tr("msgIncorrectCmd")
 			break
 		}
@@ -201,6 +220,35 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		} else {
 			resp.Text = Tr("msgNotRegistered")
 		}
+
+	case ReferToFriendsCmdKey:
+		if !crmEnabled {
+			resp.Text = Tr("msgIncorrectCmd")
+			break
+		}
+
+		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
+		s.client = client
+
+		if client == nil {
+			resp.Text = Tr("msgNotRegistered")
+			break
+		}
+		referToFriendsMsg, err := s.telegramService.settingService.GetTgReferToFriendsMsg()
+		if err != nil {
+			resp.Text = Tr("msgInternalError")
+		}
+		referToFriendsMsg = s.telegramService.replaceMarkup(&referToFriendsMsg, client)
+		resp.Text = referToFriendsMsg
+		resp.ParseMode = tgbotapi.ModeHTML
+
+	case ContactSupportCmdKey:
+		contactSupportMsg, err := s.telegramService.settingService.GetTgContactSupportMsg()
+		if err != nil {
+			resp.Text = Tr("msgInternalError")
+		}
+		resp.Text = contactSupportMsg
+		resp.ParseMode = tgbotapi.ModeHTML
 
 	case ResetCmdKey:
 		client, _ := s.telegramService.getTgClient(msg.Chat.ID)

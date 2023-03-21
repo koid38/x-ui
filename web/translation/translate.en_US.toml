@@ -213,6 +213,10 @@
 "telegramRegAccList" = "Package list for new orders"
 "telegramCrmTargetInbound" = "Target Inbound"
 "telegramCrmTargetInboundDesc" = "Inbound ID to add the approved TG client to (not implemented yet)"
+"referToFriendsMsg" = "Refer to friends Message"
+"referToFriendsDesc" = "Message will be sent when the corresponding bot menu item is selected"
+"contactSupportMsg" = "Contact Support Message"
+"contactSupportDesc" = "Message will be sent when the corresponding bot menu item is selected"
 
 [pages.setting.toasts]
 "modifySetting" = "modify setting"

@@ -174,6 +174,8 @@ class AllSetting {
         this.tgClientRegAccList = "";
         this.tgClientRegFinalMsg = "";
         this.telegramCrmTargetInbound = 1;
+        this.tgReferToFriendsMsg = "";
+        this.tgContactSupportMsg = "";
 
         this.timeLocation = "Asia/Shanghai";
 

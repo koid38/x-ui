@@ -37,6 +37,8 @@ var defaultValueMap = map[string]string{
 	"tgClientRegFinalMsg":      "Congratulations! Your account is created. You will soon receive an email.",
 	"tgClientRegAccList":       "1- One user 1 month\n2- Two users 2 months",
 	"telegramCrmTargetInbound": "1",
+	"tgReferToFriendsMsg":      "You can refer us to friends and family by forwarding them this message.",
+	"tgContactSupportMsg":      "You can contact us via @support.",
 }
 
 type SettingService struct {
@@ -299,6 +301,14 @@ func (s *SettingService) GetTgCrmRegFinalMsg() (string, error) {
 
 func (s *SettingService) GetTgCrmRegAccList() (string, error) {
 	return s.getString("tgClientRegAccList")
+}
+
+func (s *SettingService) GetTgReferToFriendsMsg() (string, error) {
+	return s.getString("tgReferToFriendsMsg")
+}
+
+func (s *SettingService) GetTgContactSupportMsg() (string, error) {
+	return s.getString("tgContactSupportMsg")
 }
 
 /*********************************************************

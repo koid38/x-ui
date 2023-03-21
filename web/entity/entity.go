@@ -41,6 +41,8 @@ type AllSetting struct {
 	TgClientRegAccList       string `json:"tgClientRegAccList" form:"tgClientRegAccList"`
 	TgClientRegFinalMsg      string `json:"tgClientRegFinalMsg" form:"tgClientRegFinalMsg"`
 	TelegramCrmTargetInbound int    `json:"telegramCrmTargetInbound" form:"telegramCrmTargetInbound"`
+	TgReferToFriendsMsg      string `json:"tgReferToFriendsMsg" form:"tgReferToFriendsMsg"`
+	TgContactSupportMsg      string `json:"tgContactSupportMsg" form:"tgContactSupportMsg"`
 
 	TimeLocation string `json:"timeLocation" form:"timeLocation"`
 }

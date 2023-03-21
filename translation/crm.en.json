@@ -4,6 +4,8 @@
 	"menuOrder": "Order a new account",
 	"menuRenew": "Renew Account",
 	"menuUploadReceipt": "Upload receipt",
+	"menuRefer": "Refer to friends",
+	"menuSupport": "Contact Support",
 	"menuReset": "Reset bot",
 	"msgChooseFromMenu": "Choose an item from the menu",
 	"msgNotRegisteredEnterLink": "You're not registered in the system. If you already have an account with us, please enter your connection link:",
