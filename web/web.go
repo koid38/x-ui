@@ -90,6 +90,8 @@ type Server struct {
 	settingService service.SettingService
 	inboundService service.InboundService
 
+	telegramJob *job.StatsNotifyJob
+
 	cron *cron.Cron
 
 	ctx    context.Context
@@ -271,7 +273,7 @@ func (s *Server) initI18n(engine *gin.Engine) error {
 		})
 	}
 
-	engine.FuncMap["i18n"]  = I18n;
+	engine.FuncMap["i18n"] = I18n
 
 	engine.Use(func(c *gin.Context) {
 		//accept := c.GetHeader("Accept-Language")
@@ -286,7 +288,7 @@ func (s *Server) initI18n(engine *gin.Engine) error {
 
 		localizer = i18n.NewLocalizer(bundle, lang)
 		c.Set("localizer", localizer)
-		c.Set("I18n" , I18n)
+		c.Set("I18n", I18n)
 		c.Next()
 	})
 
@@ -313,30 +315,29 @@ func (s *Server) startTask() {
 	// check client ips from log file every 10 sec
 	s.cron.AddJob("@every 10s", job.NewCheckClientIpJob())
 
-	// 每一天提示一次流量情况,上海时间8点30
 	var entry cron.EntryID
 	isTgbotenabled, err := s.settingService.GetTgbotenabled()
 	if (err == nil) && (isTgbotenabled) {
 		runtime, err := s.settingService.GetTgbotRuntime()
 		if err != nil || runtime == "" {
-			logger.Errorf("Add NewStatsNotifyJob error[%s],Runtime[%s] invalid,wil run default", err, runtime)
+			logger.Errorf("Add NewStatsNotifyJob error[%s], Runtime[%s] invalid, will run default", err, runtime)
 			runtime = "@daily"
 		}
 		logger.Infof("Tg notify enabled,run at %s", runtime)
-		entry, err = s.cron.AddJob(runtime, job.NewStatsNotifyJob())
+		s.telegramJob = job.NewStatsNotifyJob()
+		entry, err = s.cron.AddJob(runtime, s.telegramJob)
 		if err != nil {
 			logger.Warning("Add NewStatsNotifyJob error", err)
 			return
 		}
 		// listen for TG bot income messages
-		go job.NewStatsNotifyJob().OnReceive()
+		go s.telegramJob.OnReceive()
 	} else {
 		s.cron.Remove(entry)
 	}
 }
 
 func (s *Server) Start() (err error) {
-	//这是一个匿名函数，没没有函数名
 	defer func() {
 		if err != nil {
 			s.Stop()
@@ -410,6 +411,9 @@ func (s *Server) Start() (err error) {
 }
 
 func (s *Server) Stop() error {
+	if s.telegramJob != nil {
+		s.telegramJob.StopReceiving()
+	}
 	s.cancel()
 	s.xrayService.StopXray()
 	if s.cron != nil {

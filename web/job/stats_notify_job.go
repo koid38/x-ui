@@ -20,17 +20,16 @@ const (
 )
 
 type StatsNotifyJob struct {
-	enable          bool
 	xrayService     service.XrayService
 	inboundService  service.InboundService
 	settingService  service.SettingService
 	telegramService service.TelegramService
+	bot             *tgbotapi.BotAPI
 }
 
 func NewStatsNotifyJob() *StatsNotifyJob {
 	statsNotifyJob := new(StatsNotifyJob)
 	statsNotifyJob.telegramService.InitI18n()
-
 	return statsNotifyJob
 }
 
@@ -153,6 +152,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 		fmt.Println("got tgbot error:", err)
 		return j
 	}
+	j.bot = bot
 	bot.Debug = false
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 10
@@ -217,4 +217,12 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 	}
 	return j
 
+}
+
+func (j *StatsNotifyJob) StopReceiving() {
+
+	if j.bot != nil {
+		logger.Debug("Stop receiving Telegram updates")
+		j.bot.StopReceivingUpdates()
+	}
 }
