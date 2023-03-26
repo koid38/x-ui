@@ -146,7 +146,12 @@
                                 <a-icon type="message" @click="sendMsgToClient(tgMsg.chatId)" style="font-size: 25px"></a-icon>
                                 <a-icon type="close" @click="deleteTgMsg(tgMsg)" style="font-size: 25px; color:red"></a-icon>
                             </template>
-                        </a-table>
+                            <template slot="msg" slot-scope="text, tgMsg">
+                                <a-tag v-for="msg in tgMsg.msg">
+                                [[ msg ]]
+                                </a-tag>
+                            </template>
+                    </a-table>
                     </a-card>
                 </transition>
                 <transition name="tgClientList" appear>
@@ -157,11 +162,16 @@
                                  :pagination="false"
                                  style="margin-top: 20px"
                                  @change="() => getDBData()">
-                            <template slot="actions" slot-scope="text, tgClient">
-                                <a-icon type="message" @click="sendMsgToClient(tgClient.chatId)" style="font-size: 25px"></a-icon>
-                                <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
-                            </template>
-                            <template slot="enabled" slot-scope="text, tgClient">
+                                 <template slot="actions" slot-scope="text, tgClient">
+                                    <a-icon type="message" @click="sendMsgToClient(tgClient.chatId)" style="font-size: 25px"></a-icon>
+                                    <a-icon type="close" @click="deleteTgClient(tgClient)" style="font-size: 25px; color:red"></a-icon>
+                                </template>
+                                <template slot="clientUid" slot-scope="text, tgClient">
+                                    <a-tag v-for="uid in tgClient.clientUid">
+                                    [[ uid ]]
+                                    </a-tag>
+                                </template>
+                                <template slot="enabled" slot-scope="text, tgClient">
                                 <a-switch v-model="tgClient.enabled"></a-switch>
                             </template>
                         </a-table>
@@ -200,7 +210,7 @@ const columns = [
     { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 25, dataIndex: "chatId" },
     { title: '{{ i18n "pages.inbounds.tg.name" }}', align: 'center', width: 40, dataIndex: "clientName" },
     { title: '{{ i18n "pages.inbounds.tg.msgType" }}', align: 'center', width: 25, dataIndex: "type" },
-    { title: '{{ i18n "pages.inbounds.tg.msg" }}', align: 'center', width: 80, dataIndex: "msg" },
+    { title: '{{ i18n "pages.inbounds.tg.msg" }}', align: 'center', width: 80, scopedSlots: { customRender: 'msg' } },
     { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 30, scopedSlots: { customRender: 'actions' } },
 ];
 
@@ -209,7 +219,7 @@ const columns = [
     { title: '{{ i18n "pages.inbounds.tg.chatId" }}', align: 'center', width: 25, dataIndex: "chatId" },
     { title: '{{ i18n "pages.inbounds.tg.name" }}', align: 'center', width: 40, dataIndex: "clientName" },
     { title: '{{ i18n "pages.inbounds.tg.email" }}', align: 'center', width: 55, dataIndex: "clientEmail" },
-    { title: '{{ i18n "pages.inbounds.uid" }}', align: 'center', width: 80, dataIndex: "clientUid" },
+    { title: '{{ i18n "pages.inbounds.uid" }}', align: 'center', width: 80, scopedSlots: { customRender: 'clientUid' } },
     { title: '{{ i18n "pages.inbounds.tg.actions" }}', align: 'center', width: 20, scopedSlots: { customRender: 'actions' } },
 ];
 
@@ -480,6 +490,7 @@ const columns = [
                 this.tgClients.splice(0);
                 for (const client of tgClients) {
                     const tgClient = new TgClient(client);
+                    tgClient.clientUid = tgClient.clientUid.split(",");
                     this.tgClients.push(tgClient);
                 }
             },
@@ -488,6 +499,7 @@ const columns = [
                 for (const tgMsg of tgClientMsgs) {
                     const tgClientMsg = new TgClientMsg(tgMsg);
                     tgClientMsg.clientName = this.findTgClientById(tgClientMsg.chatId).clientName;
+                    tgClientMsg.msg = tgMsg.msg.split(",");
                     this.tgClientMsgs.push(tgClientMsg);
                 }
             },
@@ -497,8 +509,14 @@ const columns = [
             approveTgClient(tgMsg, newClient) {
                 inbound = this.dbInbounds[0].toInbound();
                 dbInbound = this.dbInbounds[0];
-                tgClient = this.findTgClientById(tgMsg.chatId);
+                tgClient = new TgClient(this.findTgClientById(tgMsg.chatId));
                 newClient = newClient;
+
+                // Find the UUID for renewal
+                const res = tgMsg.msg.find(line => line.startsWith("Acc:"));
+                if (res !== undefined) {
+                    tgClient.clientUid = res.replace("Acc:", "").trim();
+                }
                 tgClientModal.show({
                     title: '{{ i18n "pages.inbounds.tg.approveTgClient"}}',
                     cancelText: '{{ i18n "close" }}',
@@ -508,7 +526,7 @@ const columns = [
                     dbInbound: dbInbound,
                     newClient: newClient,
                     confirm: async (inbound, dbInbound, client, newClient) => {
-                        const msg = await this.updateInbound(inbound, dbInbound);
+                        var msg = await this.updateInbound(inbound, dbInbound);
                         if (!msg.success) {
                             return;
                         }
@@ -516,10 +534,14 @@ const columns = [
                         tgClient.clientUid = client.id;
                         tgClient.enabled = true;
                         if (newClient) {
-                            await this.submit(`/xui/tgClients/registerClient`, tgClient, tgClientModal);
+                            msg = await HttpUtil.postWithModal(`/xui/tgClients/registerClient`, tgClient, tgClientModal);
                         } else {
-                            await this.submit(`/xui/tgClients/renewClient`, tgClient, tgClientModal);
+                            msg = await HttpUtil.postWithModal(`/xui/tgClients/renewClient`, tgClient, tgClientModal);
                         }
+                        if (msg.success) {
+                            msg = await HttpUtil.postWithModal('/xui/tgClients/msg/del/' + tgMsg.id);
+                        }
+                        await this.getDBData();
                         tgClientModal.close();
                     }
                 });

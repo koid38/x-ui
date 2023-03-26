@@ -37,12 +37,12 @@ func (j *StatsNotifyJob) SendMsgToTgbot(msg string) {
 	//Telegram bot basic info
 	tgBottoken, err := j.settingService.GetTgBotToken()
 	if err != nil || tgBottoken == "" {
-		logger.Warning("sendMsgToTgbot failed,GetTgBotToken fail:", err)
+		logger.Warning("sendMsgToTgbot failed, GetTgBotToken fail:", err)
 		return
 	}
 	tgBotid, err := j.settingService.GetTgBotChatId()
 	if err != nil {
-		logger.Warning("sendMsgToTgbot failed,GetTgBotChatId fail:", err)
+		logger.Warning("sendMsgToTgbot failed, GetTgBotChatId fail:", err)
 		return
 	}
 
@@ -172,6 +172,9 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 	for update := range updates {
 		if update.Message == nil {
 
+			if update.CallbackQuery == nil {
+				continue
+			}
 			callback := tgbotapi.NewCallback(update.CallbackQuery.ID, "Success!")
 			if _, err := bot.Request(callback); err != nil {
 				logger.Error(err)
@@ -185,7 +188,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 				updateMsg.ReplyMarkup = &keyboard
 
 				if _, err := bot.Request(updateMsg); err != nil {
-					logger.Error(err)
+					logger.Warning(err)
 				}
 			} else if _, err := bot.Send(resp); err != nil {
 				logger.Warning(err)
@@ -210,6 +213,10 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 		}
 
 		resp := j.telegramService.HandleMessage(update.Message)
+		if resp == nil {
+			continue
+		}
+
 		if _, err := bot.Send(resp); err != nil {
 			logger.Error(err)
 		}

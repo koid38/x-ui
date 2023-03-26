@@ -1,6 +1,6 @@
 {
 	"menuStart": "شروع",
-	"menuGetUsage": "میزان مصرف",
+	"menuGetUsage": "سرویسهای من (مشاهده حجم و تمدید)",
 	"menuOrder": "خرید اشتراک جدید",
 	"menuRenew": "تمدید اشتراک",
 	"menuUploadReceipt": "ارسال فیش واریز",
@@ -29,10 +29,12 @@
 	"msgResetSuccess": "بات تلگرام شما با موفقیت ریست شد.",
 	"msgRenewSuccess": "اشتراک شما با موفقیت تمدید شد.",
 	"msgAccCreateSuccess": "اشتراک شما با موفقیت ایجاد شد.",
+	"msgNotActive": "این قابلیت فعال نمی باشد. لطفا با پشتیبانی تماس بگیرید.",
 	
 	"incorrectUuid": "شناسه کاربری صحیح نمی باشد.",
 	"yes": "بله",
 	"no": "خیر",
 	"cancelled": "انصراف!",
-	"update": "بروز رسانی"
+	"update": "بروز رسانی",
+	"renew": "تمدید"
 }

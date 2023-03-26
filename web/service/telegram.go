@@ -18,9 +18,37 @@ type TelegramService struct {
 	settingService SettingService
 }
 
-func (j *TelegramService) GetClientUsage(chatId int64, id string) *tgbotapi.MessageConfig {
+func (j *TelegramService) GetAllClientUsages(chatId int64) {
+	tgBottoken, err := j.settingService.GetTgBotToken()
+	if err != nil || tgBottoken == "" {
+		logger.Error("GetAllClientUsages failed, GetTgBotToken fail:", err)
+		return
+	}
+	bot, err := tgbotapi.NewBotAPI(tgBottoken)
+	if err != nil {
+		logger.Error("Get tgbot error:", err)
+		return
+	}
+
+	client, err := j.getTgClient(chatId)
+	if err != nil {
+		logger.Error(err)
+		return
+	}
+
+	uuids := strings.Split(client.Uid, ",")
+
+	for _, uuid := range uuids {
+		resp := j.GetClientUsage(chatId, uuid)
+		bot.Send(resp)
+	}
+}
+
+func (j *TelegramService) GetClientUsage(chatId int64, uuid string) *tgbotapi.MessageConfig {
+
 	resp := tgbotapi.NewMessage(chatId, "")
-	traffic, err := j.inboundService.GetClientTrafficById(id)
+
+	traffic, err := j.inboundService.GetClientTrafficById(uuid)
 	if err != nil {
 		logger.Error(err)
 		resp.Text = Tr("incorrectUuid")
@@ -38,23 +66,23 @@ func (j *TelegramService) GetClientUsage(chatId int64, id string) *tgbotapi.Mess
 	} else {
 		total = fmt.Sprintf("%s", common.FormatTraffic((traffic.Total)))
 	}
-	resp.Text = fmt.Sprintf("💡 Active: %t\r\n📧 Name: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n",
+	resp.Text += fmt.Sprintf("💡 Active: %t\r\n📧 Name: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n\r\n",
 		traffic.Enable, traffic.Email, common.FormatTraffic((traffic.Up + traffic.Down)),
 		total, expiryTime)
-
 	resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(Tr("update"), "update:"+id),
+			tgbotapi.NewInlineKeyboardButtonData(Tr("update"), "update:"+uuid),
+			tgbotapi.NewInlineKeyboardButtonData(Tr("renew"), "renew:"+uuid),
 		),
 	)
 	return &resp
 }
 
-func (j *TelegramService) CheckIfClientExists(id string) bool {
-	if strings.TrimSpace(id) == "" {
+func (j *TelegramService) CheckIfClientExists(uuid string) bool {
+	if strings.TrimSpace(uuid) == "" {
 		return false
 	}
-	_, err := j.inboundService.GetClientTrafficById(id)
+	_, err := j.inboundService.GetClientTrafficById(uuid)
 	if err != nil {
 		return false
 	}
@@ -81,18 +109,20 @@ func (t *TelegramService) GetTgClients() ([]*model.TgClient, error) {
 func (t *TelegramService) UpdateClient(client *model.TgClient) error {
 
 	db := database.GetTgDB()
+	dbClient, err := t.getTgClient(client.ChatID)
+	if err == nil && dbClient.Uid != "" {
+		if !strings.Contains(dbClient.Uid, client.Uid) {
+			client.Uid = dbClient.Uid + "," + client.Uid
+		} else {
+			client.Uid = dbClient.Uid
+		}
+	}
 	return db.Save(client).Error
 }
 
 func (t *TelegramService) RegisterClient(client *model.TgClient) error {
-
+	uuid := client.Uid
 	err := t.UpdateClient(client)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
-	err = t.DeleteRegRequestMsg(client.ChatID)
 	if err != nil {
 		logger.Error(err)
 		return err
@@ -103,26 +133,19 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 		logger.Error(err)
 		finalMsg = Tr("msgAccCreateSuccess")
 	}
+	finalMsg = t.replaceMarkup(&finalMsg, client.ChatID, uuid)
 	t.SendMsgToTgBot(client.ChatID, finalMsg)
 	return nil
 }
 
 func (t *TelegramService) RenewClient(client *model.TgClient) error {
-
 	err := t.UpdateClient(client)
 	if err != nil {
 		logger.Error(err)
 		return err
 	}
 
-	err = t.DeleteRegRequestMsg(client.ChatID)
-	if err != nil {
-		logger.Error(err)
-		return err
-	}
-
 	finalMsg := Tr("msgRenewSuccess")
-
 	t.SendMsgToTgBot(client.ChatID, finalMsg)
 	return nil
 }
@@ -147,8 +170,8 @@ func (t *TelegramService) getTgClient(id int64) (*model.TgClient, error) {
 	return client, nil
 }
 
-func (t *TelegramService) replaceMarkup(msg *string, tgClient *model.TgClient) string {
-	replacer := strings.NewReplacer("<UUID>", tgClient.Uid, "<CHAT_ID>", strconv.FormatInt(tgClient.ChatID, 10))
+func (t *TelegramService) replaceMarkup(msg *string, chatId int64, uuid string) string {
+	replacer := strings.NewReplacer("<UUID>", uuid, "<CHAT_ID>", strconv.FormatInt(chatId, 10))
 	return replacer.Replace(*msg)
 }
 
@@ -161,10 +184,19 @@ func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.Message
 
 func (t *TelegramService) HandleCallback(callback *tgbotapi.CallbackQuery) (resp *tgbotapi.MessageConfig, delete bool, update bool) {
 
+	chatId := callback.Message.Chat.ID
 	if strings.HasPrefix(callback.Data, "update:") {
-		resp = t.GetClientUsage(callback.Message.Chat.ID, strings.TrimPrefix(callback.Data, "update:"))
+		resp = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, "update:"))
 		delete = false
 		update = true
+		return
+	} else if strings.HasPrefix(callback.Data, "renew:") {
+		if _, exists := TgSessions[callback.Message.Chat.ID]; !exists {
+			TgSessions[chatId] = InitFSM()
+		}
+		resp = TgSessions[chatId].RenewAccount(chatId, strings.TrimPrefix(callback.Data, "renew:"))
+		delete = false
+		update = false
 		return
 	}
 
@@ -191,11 +223,6 @@ func (t *TelegramService) CanAcceptPhoto(chatId int64) bool {
 }
 
 func (t *TelegramService) SendMsgToTgBot(chatId int64, msg string) error {
-
-	tgClient, err := t.getTgClient(chatId)
-	if err == nil {
-		msg = t.replaceMarkup(&msg, tgClient)
-	}
 
 	tgBottoken, err := t.settingService.GetTgBotToken()
 	if err != nil || tgBottoken == "" {

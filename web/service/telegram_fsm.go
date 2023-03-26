@@ -35,11 +35,9 @@ const (
 	StartCmdKey          = string("start")
 	UsageCmdKey          = string("usage")
 	RegisterCmdKey       = string("register")
-	RenewCmdKey          = string("renew")
 	SendReceiptCmdKey    = string("receipt")
 	ReferToFriendsCmdKey = string("refer")
 	ContactSupportCmdKey = string("support")
-	ResetCmdKey          = string("reset")
 )
 
 func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
@@ -52,11 +50,6 @@ func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 		{
 			key:         RegisterCmdKey,
 			desc:        Tr("menuOrder"),
-			crmFunction: true,
-		},
-		{
-			key:         RenewCmdKey,
-			desc:        Tr("menuRenew"),
 			crmFunction: true,
 		},
 		{
@@ -74,16 +67,11 @@ func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 			desc:        Tr("menuSupport"),
 			crmFunction: false,
 		},
-		{
-			key:         ResetCmdKey,
-			desc:        Tr("menuReset"),
-			crmFunction: false,
-		},
 	}
 
 	menuItemCount := len(commands)
 	if !crmEnabled {
-		menuItemCount -= 4
+		menuItemCount -= 3
 	}
 
 	tgCommands := make([]tgbotapi.BotCommand, 0, menuItemCount)
@@ -136,16 +124,16 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 				s.state = RegUuidState
 			} else {
 				if client.Enabled {
-					resp = *s.telegramService.GetClientUsage(msg.Chat.ID, client.Uid)
+					s.telegramService.GetAllClientUsages(msg.Chat.ID)
+					return nil
 				} else {
 					resp.Text = Tr("msgAlreadyRegistered")
 				}
 			}
-
 		} else {
 			resp = *s.telegramService.GetClientUsage(msg.Chat.ID, msg.CommandArguments())
 
-			if client == nil && err == nil {
+			if client == nil {
 				name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
 				s.client = &model.TgClient{
 					Enabled: true,
@@ -154,6 +142,15 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 					Uid:     msg.CommandArguments(),
 				}
 				err = s.telegramService.AddTgClient(s.client)
+			} else {
+				if s.telegramService.CheckIfClientExists(msg.CommandArguments()) {
+					client.Uid = msg.CommandArguments()
+					err = s.telegramService.UpdateClient(client)
+				}
+			}
+			if err != nil {
+				resp.Text = Tr("msgInternalError")
+				resp.ReplyMarkup = nil
 			}
 		}
 
@@ -166,43 +163,14 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
 		s.client = client
 
-		if client == nil {
+		s.showAccListKeyboard(&resp)
 
-			s.showAccListKeyboard(&resp)
-
-			s.clientRequest = &model.TgClientMsg{
-				ChatID: msg.Chat.ID,
-				Type:   model.Registration,
-			}
-
-			s.state = RegAccTypeState
-		} else {
-			resp.Text = Tr("msgErrorMultipleAcc")
+		s.clientRequest = &model.TgClientMsg{
+			ChatID: msg.Chat.ID,
+			Type:   model.Registration,
 		}
 
-	case RenewCmdKey:
-		if !crmEnabled {
-			resp.Text = Tr("msgIncorrectCmd")
-			break
-		}
-
-		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
-		s.client = client
-
-		if client != nil {
-
-			s.showAccListKeyboard(&resp)
-
-			s.clientRequest = &model.TgClientMsg{
-				ChatID: s.client.ChatID,
-				Type:   model.Renewal,
-			}
-
-			s.state = RegAccTypeState
-		} else {
-			resp.Text = Tr("msgNotRegisteredEnterLink")
-			s.state = RegUuidState
-		}
+		s.state = RegAccTypeState
 
 	case SendReceiptCmdKey:
 		if !crmEnabled {
@@ -238,7 +206,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		if err != nil {
 			resp.Text = Tr("msgInternalError")
 		}
-		referToFriendsMsg = s.telegramService.replaceMarkup(&referToFriendsMsg, client)
+		referToFriendsMsg = s.telegramService.replaceMarkup(&referToFriendsMsg, client.ChatID, "")
 		resp.Text = referToFriendsMsg
 		resp.ParseMode = tgbotapi.ModeHTML
 
@@ -250,27 +218,45 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		resp.Text = contactSupportMsg
 		resp.ParseMode = tgbotapi.ModeHTML
 
-	case ResetCmdKey:
-		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
-		s.client = client
-		if client != nil {
-			s.state = ConfirmResetState
-			resp.Text = Tr("msgConfirmReset")
-			resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(Tr("yes"), "Yes"),
-				tgbotapi.NewInlineKeyboardButtonData(Tr("no"), "No"),
-			),
-			)
-		} else {
-			resp.Text = Tr("msgNotRegistered")
-		}
-
 	default:
 		resp.Text = Tr("msgIncorrectCmd")
 
 	}
 	return &resp
 
+}
+
+func RenewAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
+
+	if msg.IsCommand() {
+		return abort(s, msg)
+	}
+
+	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
+	orderType := strings.TrimSpace(msg.Text)
+	if orderType == "" {
+		resp.Text = Tr("msgIncorrectPackageNo")
+		s.state = IdleState
+		return &resp
+	}
+
+	s.clientRequest.Msg = "Type: " + orderType
+
+	err := s.telegramService.PushTgClientMsg(s.clientRequest)
+	if err != nil {
+		logger.Error(err)
+		resp.Text = Tr("msgInternalError")
+	} else {
+		s.telegramService.SendMsgToAdmin("New account renewal request! Please visit the panel.")
+		if err != nil {
+			logger.Error("RegNoteState failed to send msg to admin:", err)
+		}
+
+		s.canAcceptPhoto = true // allow the client to send receipts
+		resp.Text = Tr("msgOrderRegistered")
+		s.state = IdleState
+	}
+	return &resp
 }
 
 func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
@@ -287,16 +273,18 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 		return &resp
 	}
 
-	name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
-	s.client = &model.TgClient{
-		Enabled: false,
-		ChatID:  msg.Chat.ID,
-		Name:    name,
-	}
+	s.clientRequest.Msg += "Type: " + orderType
 
-	s.clientRequest.Msg = "Type: " + orderType
-
-	if s.clientRequest.Type == model.Renewal {
+	if s.client == nil {
+		name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
+		s.client = &model.TgClient{
+			Enabled: false,
+			ChatID:  msg.Chat.ID,
+			Name:    name,
+		}
+		s.state = RegEmailState
+		resp.Text = Tr("msgEnterEmail")
+	} else {
 		err := s.telegramService.PushTgClientMsg(s.clientRequest)
 		if err != nil {
 			logger.Error(err)
@@ -311,11 +299,8 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 			resp.Text = Tr("msgOrderRegistered")
 			s.state = IdleState
 		}
-		return &resp
 	}
 
-	s.state = RegEmailState
-	resp.Text = Tr("msgEnterEmail")
 	return &resp
 }
 
@@ -388,11 +373,6 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	if uuid == "" || !s.telegramService.CheckIfClientExists(uuid) {
 		resp.Text = Tr("msgIncorrectUuid")
 		return &resp
-	}
-	s.client = &model.TgClient{
-		ChatID:  msg.Chat.ID,
-		Uid:     uuid,
-		Enabled: true,
 	}
 
 	name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
@@ -477,4 +457,35 @@ func (s *TgSession) showAccListKeyboard(resp *tgbotapi.MessageConfig) {
 	}
 
 	resp.Text = Tr("msgChoosePackage") + "\n" + accList
+}
+
+func (s *TgSession) RenewAccount(chatId int64, uuid string) *tgbotapi.MessageConfig {
+	crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
+	if err != nil {
+		crmEnabled = false
+	}
+
+	resp := tgbotapi.NewMessage(chatId, "")
+	if !crmEnabled {
+		resp.Text = Tr("msgNotActive")
+		return &resp
+	}
+
+	client, _ := s.telegramService.getTgClient(chatId)
+	s.client = client
+
+	if client != nil {
+		s.showAccListKeyboard(&resp)
+		s.clientRequest = &model.TgClientMsg{
+			ChatID: s.client.ChatID,
+			Type:   model.Renewal,
+			Msg:    "Acc: " + uuid + ",",
+		}
+
+		s.state = RegAccTypeState
+	} else {
+		resp.Text = Tr("msgNotRegisteredEnterLink")
+		s.state = IdleState
+	}
+	return &resp
 }

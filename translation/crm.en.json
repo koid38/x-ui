@@ -1,6 +1,6 @@
 {
 	"menuStart": "Start",
-	"menuGetUsage": "Get Usage",
+	"menuGetUsage": "My accounts",
 	"menuOrder": "Order a new account",
 	"menuRenew": "Renew Account",
 	"menuUploadReceipt": "Upload receipt",
@@ -29,11 +29,13 @@
 	"msgResetSuccess": "Telegram bot got successfully reset.",
 	"msgRenewSuccess": "Congratulations! Your account is renewed.",
 	"msgAccCreateSuccess": "Congratulations! Your account is created. You will soon receive an email.",
-	
+	"msgNotActive": "This feature is not available. Please contact support!",
+
 	"incorrectUuid": "Incorrect UUID!",
 	"yes": "Yes",
 	"no": "No",
 	"cancelled": "Cancelled!",
-	"update": "Update"
+	"update": "Update",
+	"renew": "Renew"
 }
 

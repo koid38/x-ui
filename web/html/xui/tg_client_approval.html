@@ -123,11 +123,11 @@
             this.dbInbound = dbInbound;
             this.newClient = newClient;
             this.tgClient = new TgClient(tgClient);
-            if (this.tgClient.clientUid != "") {
-                this.client = this.fetchClient(this.inbound, this.tgClient.clientUid);
-            } else {
+            if (newClient) {
                 this.addClient(this.inbound);
                 this.client.email = tgClient.clientName.replace(/ /g,"_");
+            } else {
+                this.client = this.fetchClient(this.inbound, this.tgClient.clientUid);
             }
         },
         close() {
