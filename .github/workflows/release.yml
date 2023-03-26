@@ -58,6 +58,7 @@ jobs:
       - name: upload
         uses: softprops/action-gh-release@v1
         with:
+          draft: true
           files: x-ui-linux-amd64.tar.gz
           token: ${{ secrets.GHUB_TOKEN }}
 
@@ -99,7 +100,8 @@ jobs:
       - name: upload
         uses: softprops/action-gh-release@v1
         with:
-          files: x-ui-linux-amd64.tar.gz
+          draft: true
+          files: x-ui-linux-arm64.tar.gz
           token: ${{ secrets.GHUB_TOKEN }}
 
   linuxs390xbuild:
@@ -139,5 +141,6 @@ jobs:
       - name: upload
         uses: softprops/action-gh-release@v1
         with:
-          files: x-ui-linux-amd64.tar.gz
+          draft: true
+          files: x-ui-linux-s390x.tar.gz
           token: ${{ secrets.GHUB_TOKEN }}
