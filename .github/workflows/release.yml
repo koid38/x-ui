@@ -60,6 +60,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: x-ui-linux-amd64.tar.gz
+          token: ${{ secrets.GHUB_TOKEN }}
 
   linuxarm64build:
     name: build x-ui arm64 version
@@ -101,6 +102,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: x-ui-linux-amd64.tar.gz
+          token: ${{ secrets.GHUB_TOKEN }}
 
   linuxs390xbuild:
     name: build x-ui s390x version
@@ -141,3 +143,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: x-ui-linux-amd64.tar.gz
+          token: ${{ secrets.GHUB_TOKEN }}
