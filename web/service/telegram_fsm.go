@@ -35,7 +35,6 @@ const (
 	StartCmdKey          = string("start")
 	UsageCmdKey          = string("usage")
 	RegisterCmdKey       = string("register")
-	SendReceiptCmdKey    = string("receipt")
 	ReferToFriendsCmdKey = string("refer")
 	ContactSupportCmdKey = string("support")
 )
@@ -52,11 +51,7 @@ func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 			desc:        Tr("menuOrder"),
 			crmFunction: true,
 		},
-		{
-			key:         SendReceiptCmdKey,
-			desc:        Tr("menuUploadReceipt"),
-			crmFunction: true,
-		},
+
 		{
 			key:         ReferToFriendsCmdKey,
 			desc:        Tr("menuRefer"),
@@ -71,7 +66,7 @@ func CreateChatMenu(crmEnabled bool) []tgbotapi.BotCommand {
 
 	menuItemCount := len(commands)
 	if !crmEnabled {
-		menuItemCount -= 3
+		menuItemCount -= 2
 	}
 
 	tgCommands := make([]tgbotapi.BotCommand, 0, menuItemCount)
@@ -172,23 +167,6 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
 		s.state = RegAccTypeState
 
-	case SendReceiptCmdKey:
-		if !crmEnabled {
-			resp.Text = Tr("msgIncorrectCmd")
-			break
-		}
-
-		client, _ := s.telegramService.getTgClient(msg.Chat.ID)
-		s.client = client
-
-		if client != nil {
-			s.canAcceptPhoto = true
-			s.state = SendReceiptState
-			resp.Text = Tr("msgAttachReceipt")
-		} else {
-			resp.Text = Tr("msgNotRegistered")
-		}
-
 	case ReferToFriendsCmdKey:
 		if !crmEnabled {
 			resp.Text = Tr("msgIncorrectCmd")
@@ -226,39 +204,6 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
 }
 
-func RenewAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
-
-	if msg.IsCommand() {
-		return abort(s, msg)
-	}
-
-	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
-	orderType := strings.TrimSpace(msg.Text)
-	if orderType == "" {
-		resp.Text = Tr("msgIncorrectPackageNo")
-		s.state = IdleState
-		return &resp
-	}
-
-	s.clientRequest.Msg = "Type: " + orderType
-
-	err := s.telegramService.PushTgClientMsg(s.clientRequest)
-	if err != nil {
-		logger.Error(err)
-		resp.Text = Tr("msgInternalError")
-	} else {
-		s.telegramService.SendMsgToAdmin("New account renewal request! Please visit the panel.")
-		if err != nil {
-			logger.Error("RegNoteState failed to send msg to admin:", err)
-		}
-
-		s.canAcceptPhoto = true // allow the client to send receipts
-		resp.Text = Tr("msgOrderRegistered")
-		s.state = IdleState
-	}
-	return &resp
-}
-
 func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
 	if msg.IsCommand() {
@@ -285,20 +230,16 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 		s.state = RegEmailState
 		resp.Text = Tr("msgEnterEmail")
 	} else {
-		err := s.telegramService.PushTgClientMsg(s.clientRequest)
+		moneyTransferInstructions, err := s.telegramService.settingService.GetTgMoneyTransferMsg()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("RegAccTypeState failed to get money transfer instructions: ", err)
 			resp.Text = Tr("msgInternalError")
-		} else {
-			s.telegramService.SendMsgToAdmin("New account renewal request! Please visit the panel.")
-			if err != nil {
-				logger.Error("RegNoteState failed to send msg to admin:", err)
-			}
-
-			s.canAcceptPhoto = true // allow the client to send receipts
-			resp.Text = Tr("msgOrderRegistered")
 			s.state = IdleState
+			return &resp
 		}
+		s.canAcceptPhoto = true // allow the client to send receipts
+		resp.Text = moneyTransferInstructions
+		s.state = SendReceiptState
 	}
 
 	return &resp
@@ -340,23 +281,18 @@ func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		logger.Error(err)
 		resp.Text = Tr("msgInternalError")
 	} else {
-		err := s.telegramService.PushTgClientMsg(s.clientRequest)
+		moneyTransferInstructions, err := s.telegramService.settingService.GetTgMoneyTransferMsg()
 		if err != nil {
-			logger.Error(err)
+			logger.Error("RegNoteState failed to get money transfer instructions: ", err)
 			resp.Text = Tr("msgInternalError")
-		} else {
-			resp.Text = Tr("msgOrderRegistered")
+			s.state = IdleState
+			return &resp
 		}
+		s.canAcceptPhoto = true // allow the client to send receipts
+		resp.Text = moneyTransferInstructions
+		s.state = SendReceiptState
 	}
 
-	s.telegramService.SendMsgToAdmin("New account registration request! Please visit the panel.")
-	if err != nil {
-		logger.Error("RegNoteState failed to send msg to admin:", err)
-	}
-
-	s.canAcceptPhoto = true // allow the client to send receipts
-
-	s.state = IdleState
 	return &resp
 }
 
@@ -401,13 +337,34 @@ func SendReceiptState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConf
 	}
 
 	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
-	if msg.Photo != nil {
+	if s.clientRequest == nil {
+		resp.Text = Tr("msgInternalError")
 		s.canAcceptPhoto = false
 		s.state = IdleState
-		resp.Text = Tr("msgReceiptReceived")
-	} else {
-		resp.Text = Tr("msgIncorrectReceipt")
+		return &resp
 	}
+
+	if msg.Photo == nil {
+		resp.Text = Tr("msgIncorrectReceipt")
+		return &resp
+	}
+
+	// Put the order up on the panel
+	err := s.telegramService.PushTgClientMsg(s.clientRequest)
+	if err != nil {
+		logger.Error(err)
+		resp.Text = Tr("msgInternalError")
+	}
+
+	err = s.telegramService.SendMsgToAdmin("New client request! Please visit the panel.")
+	if err != nil {
+		logger.Error("SendReceiptState failed to send msg to admin:", err)
+	}
+
+	s.canAcceptPhoto = false
+	s.state = IdleState
+	resp.Text = Tr("msgOrderRegistered")
+
 	return &resp
 }
 

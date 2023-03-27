@@ -35,6 +35,7 @@ var defaultValueMap = map[string]string{
 	"tgRunTime":                "",
 	"tgCrmEnabled":             "false",
 	"tgClientRegFinalMsg":      "Congratulations! Your account is created. You will soon receive an email.",
+	"tgMoneyTransferMsg":       "Please transfer the fee to the following wallet/account and send over the receipt.",
 	"tgClientRegAccList":       "1- One user 1 month\n2- Two users 2 months",
 	"telegramCrmTargetInbound": "1",
 	"tgReferToFriendsMsg":      "You can refer us to friends and family by forwarding them this message.",
@@ -297,6 +298,10 @@ func (s *SettingService) GetTgCrmEnabled() (bool, error) {
 
 func (s *SettingService) GetTgCrmRegFinalMsg() (string, error) {
 	return s.getString("tgClientRegFinalMsg")
+}
+
+func (s *SettingService) GetTgMoneyTransferMsg() (string, error) {
+	return s.getString("tgMoneyTransferMsg")
 }
 
 func (s *SettingService) GetTgCrmRegAccList() (string, error) {

@@ -40,6 +40,7 @@ type AllSetting struct {
 	TgCrmEnabled             bool   `json:"tgCrmEnabled" form:"tgCrmEnabled"`
 	TgClientRegAccList       string `json:"tgClientRegAccList" form:"tgClientRegAccList"`
 	TgClientRegFinalMsg      string `json:"tgClientRegFinalMsg" form:"tgClientRegFinalMsg"`
+	TgMoneyTransferMsg       string `json:"tgMoneyTransferMsg" form:"tgMoneyTransferMsg"`
 	TelegramCrmTargetInbound int    `json:"telegramCrmTargetInbound" form:"telegramCrmTargetInbound"`
 	TgReferToFriendsMsg      string `json:"tgReferToFriendsMsg" form:"tgReferToFriendsMsg"`
 	TgContactSupportMsg      string `json:"tgContactSupportMsg" form:"tgContactSupportMsg"`

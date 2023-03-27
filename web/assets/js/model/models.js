@@ -173,6 +173,7 @@ class AllSetting {
         this.tgCrmEnabled = false;
         this.tgClientRegAccList = "";
         this.tgClientRegFinalMsg = "";
+        this.tgMoneyTransferMsg = "";
         this.telegramCrmTargetInbound = 1;
         this.tgReferToFriendsMsg = "";
         this.tgContactSupportMsg = "";
