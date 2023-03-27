@@ -125,7 +125,10 @@
             this.tgClient = new TgClient(tgClient);
             if (newClient) {
                 this.addClient(this.inbound);
-                this.client.email = tgClient.clientName.replace(/ /g,"_");
+                this.client.email = tgClient.clientEmail.trim()
+                if (this.client.email == "") {
+                    this.client.email = tgClient.clientName.replace(/ /g,"_");
+                }
             } else {
                 this.client = this.fetchClient(this.inbound, this.tgClient.clientUid);
             }
