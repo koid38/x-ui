@@ -38,13 +38,14 @@ func (j *TelegramService) GetAllClientUsages(chatId int64) {
 
 	uuids := strings.Split(client.Uid, ",")
 
+	crmEnabled := j.settingService.GetTgCrmEnabled()
 	for _, uuid := range uuids {
-		resp := j.GetClientUsage(chatId, uuid)
+		resp := j.GetClientUsage(chatId, uuid, crmEnabled)
 		bot.Send(resp)
 	}
 }
 
-func (j *TelegramService) GetClientUsage(chatId int64, uuid string) *tgbotapi.MessageConfig {
+func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn bool) *tgbotapi.MessageConfig {
 
 	resp := tgbotapi.NewMessage(chatId, "")
 
@@ -69,12 +70,12 @@ func (j *TelegramService) GetClientUsage(chatId int64, uuid string) *tgbotapi.Me
 	resp.Text += fmt.Sprintf("💡 Active: %t\r\n📧 Name: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n\r\n",
 		traffic.Enable, traffic.Email, common.FormatTraffic((traffic.Up + traffic.Down)),
 		total, expiryTime)
-	resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(Tr("update"), "update:"+uuid),
-			tgbotapi.NewInlineKeyboardButtonData(Tr("renew"), "renew:"+uuid),
-		),
-	)
+
+	buttons := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(Tr("update"), "update:"+uuid))
+	if showRenewBtn {
+		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(Tr("renew"), "renew:"+uuid))
+	}
+	resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(buttons)
 	return &resp
 }
 
@@ -186,7 +187,7 @@ func (t *TelegramService) HandleCallback(callback *tgbotapi.CallbackQuery) (resp
 
 	chatId := callback.Message.Chat.ID
 	if strings.HasPrefix(callback.Data, "update:") {
-		resp = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, "update:"))
+		resp = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, "update:"), t.settingService.GetTgCrmEnabled())
 		delete = false
 		update = true
 		return

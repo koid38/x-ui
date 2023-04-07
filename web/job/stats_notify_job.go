@@ -159,10 +159,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	updates := bot.GetUpdatesChan(u)
 
-	crmEnabled, err := j.settingService.GetTgCrmEnabled()
-	if err != nil {
-		crmEnabled = false
-	}
+	crmEnabled := j.settingService.GetTgCrmEnabled()
 
 	config := tgbotapi.NewSetMyCommands(service.CreateChatMenu(crmEnabled)...)
 	if _, err := bot.Request(config); err != nil {

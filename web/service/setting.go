@@ -292,8 +292,12 @@ func (s *SettingService) GetTimeLocation() (*time.Location, error) {
 * Telegram CRM
 *********************************************************/
 
-func (s *SettingService) GetTgCrmEnabled() (bool, error) {
-	return s.getBool("tgCrmEnabled")
+func (s *SettingService) GetTgCrmEnabled() bool {
+	crmEnabled, err := s.getBool("tgCrmEnabled")
+	if err != nil {
+		return false
+	}
+	return crmEnabled
 }
 
 func (s *SettingService) GetTgCrmRegFinalMsg() (string, error) {

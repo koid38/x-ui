@@ -101,10 +101,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 		return &resp
 	}
 
-	crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
-	if err != nil {
-		crmEnabled = false
-	}
+	crmEnabled := s.telegramService.settingService.GetTgCrmEnabled()
 
 	// Extract the command from the Message.
 	switch msg.Command() {
@@ -126,7 +123,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 				}
 			}
 		} else {
-			resp = *s.telegramService.GetClientUsage(msg.Chat.ID, msg.CommandArguments())
+			resp = *s.telegramService.GetClientUsage(msg.Chat.ID, msg.CommandArguments(), s.telegramService.settingService.GetTgCrmEnabled())
 
 			if client == nil {
 				name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
@@ -417,10 +414,7 @@ func (s *TgSession) showAccListKeyboard(resp *tgbotapi.MessageConfig) {
 }
 
 func (s *TgSession) RenewAccount(chatId int64, uuid string) *tgbotapi.MessageConfig {
-	crmEnabled, err := s.telegramService.settingService.GetTgCrmEnabled()
-	if err != nil {
-		crmEnabled = false
-	}
+	crmEnabled := s.telegramService.settingService.GetTgCrmEnabled()
 
 	resp := tgbotapi.NewMessage(chatId, "")
 	if !crmEnabled {
