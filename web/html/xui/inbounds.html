@@ -46,16 +46,17 @@
                     </a-card>
                 </transition>
                 <transition name="list" appear>
-                    <a-card hoverable>
-                        <div slot="title">
-                            <a-button type="primary" icon="plus" @click="openAddInbound"></a-button>
+                    <a-card size="small" :bordered="false" hoverable>
+                        <div slot="title" style="padding-left: 15px;">
+                            Inbounds &nbsp;&nbsp;
+                            <a-button type="primary" shape="round" icon="plus" @click="openAddInbound">Add Inbound</a-button>                            
                         </div>
 <!--                        <a-input v-model="searchKey" placeholder="搜索" autofocus style="max-width: 300px"></a-input>-->
                         <a-table :columns="columns" :row-key="dbInbound => dbInbound.id"
                                  :data-source="dbInbounds"
                                  :loading="spinning" :scroll="{ x: 1200 }"
                                  :pagination="false"
-                                 style="margin-top: 20px"
+                                 style="margin-top: 10px"
                                  @change="() => getDBData()">
                             <template slot="action" slot-scope="text, dbInbound">
                                 <a-icon type="edit" style="font-size: 25px" @click="openEditInbound(dbInbound)"></a-icon>
@@ -133,12 +134,13 @@
                 </transition>
 
                 <transition name="tgMsgList" appear>
-                    <a-card hoverable>
+                    <a-card size="small" :bordered="false" hoverable>
+                        <div slot="title" style="padding-left: 15px;">Telegram Client Orders</div>
                         <a-table :columns="tgMsgColumns" :row-key="tgMsg => tgMsg.chatId"
                                  :data-source="tgClientMsgs"
                                  :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
-                                 style="margin-top: 20px"
+                                 style="margin-top: 10px"
                                  @change="() => getDBData()">
                             <template slot="actions" slot-scope="text, tgMsg">
                                 <a-icon v-if="tgMsg.type == 'registration'" type="check" @click="approveTgClient(tgMsg, true)" style="font-size: 25px; color:green"></a-icon>
@@ -155,12 +157,16 @@
                     </a-card>
                 </transition>
                 <transition name="tgClientList" appear>
-                    <a-card hoverable>
+                    <a-card size="small" :bordered="false" hoverable>
+                        <div slot="title" style="padding-left: 15px;">
+                            Telegram Clients &nbsp;&nbsp;
+                            <a-button type="primary" shape="round" icon="message" @click="sendMsgToClient(-1)">Broadcast</a-button>
+                        </div>
                         <a-table :columns="tgClientColumns" :row-key="tgClient => tgClient.chatId"
                                  :data-source="tgClients"
                                  :loading="spinning" :scroll="{ x: 850 }"
                                  :pagination="false"
-                                 style="margin-top: 20px"
+                                 style="margin-top: 10px"
                                  @change="() => getDBData()">
                                  <template slot="actions" slot-scope="text, tgClient">
                                     <a-icon type="message" @click="sendMsgToClient(tgClient.chatId)" style="font-size: 25px"></a-icon>
@@ -554,7 +560,11 @@ const columns = [
                     chatId: chatId,
                     confirm: async (clientMsg) => {
                         tgClientMsgModal.loading();
-                        await this.submit(`/xui/tgClients/sendMsg`, clientMsg, tgClientMsgModal);
+                        if (chatId > 0) {
+                            await this.submit(`/xui/tgClients/sendMsg`, clientMsg, tgClientMsgModal);
+                        } else {
+                            await this.submit(`/xui/tgClients/sendMsgToAll`, clientMsg, tgClientMsgModal);
+                        }
                         tgClientMsgModal.close();
                     }
                 });

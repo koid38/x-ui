@@ -289,6 +289,33 @@ func (t *TelegramService) SendMsgToTgBot(chatId int64, msg string) error {
 	return nil
 }
 
+func (t *TelegramService) BroadcastMsgToBot(msg string) error {
+
+	tgBottoken, err := t.settingService.GetTgBotToken()
+	if err != nil || tgBottoken == "" {
+		logger.Error("SendMsgToTgBot failed, GetTgBotToken fail:", err)
+		return err
+	}
+	bot, err := tgbotapi.NewBotAPI(tgBottoken)
+	if err != nil {
+		logger.Error("SendMsgToTgBot failed, NewBotAPI fail:", err)
+		return err
+	}
+
+	clients, err := t.GetTgClients()
+	if err != nil {
+		return err
+	}
+
+	for i := range clients {
+		info := tgbotapi.NewMessage(clients[i].ChatID, msg)
+		info.ParseMode = "HTML"
+		info.DisableWebPagePreview = true
+		bot.Send(info)
+	}
+	return nil
+}
+
 func (t *TelegramService) SendMsgToAdmin(msg string) error {
 	adminId, err := t.settingService.GetTgBotChatId()
 	if err != nil {

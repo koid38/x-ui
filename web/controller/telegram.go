@@ -25,6 +25,7 @@ func (a *TelegramController) initRouter(g *gin.RouterGroup) {
 
 	g.POST("/list", a.getClients)
 	g.POST("/sendMsg", a.sendMsg)
+	g.POST("/sendMsgToAll", a.sendMsg)
 	g.POST("/update", a.updateClient)
 	g.POST("/registerClient", a.approveClient)
 	g.POST("/renewClient", a.renewClient)
@@ -63,7 +64,11 @@ func (a *TelegramController) sendMsg(c *gin.Context) {
 		return
 	}
 
-	err = a.telegramService.SendMsgToTgBot(clientMsg.ChatID, clientMsg.Msg)
+	if clientMsg.ChatID > 0 {
+		err = a.telegramService.SendMsgToTgBot(clientMsg.ChatID, clientMsg.Msg)
+	} else {
+		err = a.telegramService.BroadcastMsgToBot(clientMsg.Msg)
+	}
 	jsonMsgObj(c, I18n(c, "sendMsg"), clientMsg.ChatID, err)
 	if err != nil {
 		jsonMsg(c, I18n(c, "pages.inbounds.toasts.obtain"), err)
