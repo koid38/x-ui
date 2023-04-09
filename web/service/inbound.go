@@ -50,7 +50,7 @@ func (s *InboundService) checkPortExist(port int, ignoreId int) (bool, error) {
 	return count > 0, nil
 }
 
-func (s *InboundService) getClients(inbound *model.Inbound) ([]model.Client, error) {
+func (s *InboundService) GetClients(inbound *model.Inbound) ([]model.Client, error) {
 	settings := map[string][]model.Client{}
 	json.Unmarshal([]byte(inbound.Settings), &settings)
 	if settings == nil {
@@ -77,7 +77,7 @@ func (s *InboundService) checkEmailsExist(emails map[string]bool, ignoreId int) 
 	}
 
 	for _, inbound := range inbounds {
-		clients, err := s.getClients(inbound)
+		clients, err := s.GetClients(inbound)
 		if err != nil {
 			return "", err
 		}
@@ -92,7 +92,7 @@ func (s *InboundService) checkEmailsExist(emails map[string]bool, ignoreId int) 
 }
 
 func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (string, error) {
-	clients, err := s.getClients(inbound)
+	clients, err := s.GetClients(inbound)
 	if err != nil {
 		return "", err
 	}

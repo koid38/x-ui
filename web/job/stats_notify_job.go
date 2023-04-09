@@ -105,8 +105,7 @@ func (j *StatsNotifyJob) Run() {
 		logger.Warning("StatsNotifyJob run failed:", err)
 		return
 	}
-	//NOTE:If there no any sessions here,need to notify here
-	//TODO:分节点推送,自动转化格式
+
 	for _, inbound := range inbouds {
 		info += fmt.Sprintf("Node name:%s\r\nPort:%d\r\nUpload↑:%s\r\nDownload↓:%s\r\nTotal:%s\r\n", inbound.Remark, inbound.Port, common.FormatTraffic(inbound.Up), common.FormatTraffic(inbound.Down), common.FormatTraffic((inbound.Up + inbound.Down)))
 		if inbound.ExpiryTime == 0 {
@@ -116,6 +115,8 @@ func (j *StatsNotifyJob) Run() {
 		}
 	}
 	j.SendMsgToTgbot(info)
+
+	j.telegramService.NotifyUsersAboutToExpire()
 }
 
 func (j *StatsNotifyJob) UserLoginNotify(username string, ip string, time string, status LoginStatus) {

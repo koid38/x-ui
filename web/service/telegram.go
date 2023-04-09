@@ -79,6 +79,52 @@ func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn
 	return &resp
 }
 
+func (j *TelegramService) NotifyUsersAboutToExpire() {
+	clients, err := j.GetTgClients()
+	if err != nil {
+		return
+	}
+
+	tgBottoken, err := j.settingService.GetTgBotToken()
+	if err != nil || tgBottoken == "" {
+		logger.Error("GetAllClientUsages failed, GetTgBotToken fail:", err)
+		return
+	}
+	bot, err := tgbotapi.NewBotAPI(tgBottoken)
+	if err != nil {
+		logger.Error("Get tgbot error:", err)
+		return
+	}
+
+	for i := range clients {
+		uuids := strings.Split(clients[i].Uid, ",")
+
+		for _, uuid := range uuids {
+			traffic, err := j.inboundService.GetClientTrafficById(uuid)
+			if err != nil || !traffic.Enable {
+				continue
+			}
+			if (traffic.Up + traffic.Down) > traffic.Total*85/100 {
+				msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgTrafficExceeds85"))
+				bot.Send(msg)
+
+				usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled())
+				bot.Send(usageMsg)
+			} else {
+				remainingHours := time.Unix((traffic.ExpiryTime / 1000), 0).Sub(time.Now())
+				if remainingHours <= time.Hour*24 {
+					msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgAccExpiringSoon"))
+					bot.Send(msg)
+
+					usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled())
+					bot.Send(usageMsg)
+				}
+			}
+		}
+	}
+
+}
+
 func (j *TelegramService) CheckIfClientExists(uuid string) bool {
 	if strings.TrimSpace(uuid) == "" {
 		return false
