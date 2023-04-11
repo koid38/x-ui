@@ -7,7 +7,7 @@
 	"menuRefer": "Refer to friends",
 	"menuSupport": "Contact Support",
 	"menuReset": "Reset bot",
-	"msgChooseFromMenu": "Choose an item from the menu",
+	"msgChooseFromMenu": "Choose an item from the menu below",
 	"msgNotRegisteredEnterLink": "You're not registered in the system. If you already have an account with us, please enter your connection link:",
 	"msgAlreadyRegistered": "You have already registered. We will contact you soon.",
 	"msgIncorrectCmd": "I don't know that command, choose an item from the menu",

@@ -15,6 +15,7 @@ type TgClient struct {
 	Email        string        `json:"clientEmail" form:"clientEmail"`
 	Uid          string        `json:"clientUid" form:"clientUid"`
 	Enabled      bool          `json:"enabled" form:"enabled"`
+	Language     string        `json:"language" form:"language"`
 	TgClientMsgs []TgClientMsg `gorm:"foreignKey:ChatID;references:ChatID;constraint:OnDelete:CASCADE;"`
 }
 

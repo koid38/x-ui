@@ -6,6 +6,7 @@ class TgClient {
         this.clientId = "";
         this.clientEmail = "";
         this.clientUid = "";
+        this.language = "";
         this.enabled = false;
         if (data == null) {
             return;

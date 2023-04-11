@@ -13,6 +13,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
+const (
+	updateCommandPrefix = string("update:")
+	renewCommandPrefix  = string("renew:")
+)
+
 type TelegramService struct {
 	inboundService InboundService
 	settingService SettingService
@@ -36,23 +41,28 @@ func (j *TelegramService) GetAllClientUsages(chatId int64) {
 		return
 	}
 
+	lang := defaultLang
+	if client.Language != "" {
+		lang = client.Language
+	}
+
 	uuids := strings.Split(client.Uid, ",")
 
 	crmEnabled := j.settingService.GetTgCrmEnabled()
 	for _, uuid := range uuids {
-		resp := j.GetClientUsage(chatId, uuid, crmEnabled)
+		resp := j.GetClientUsage(chatId, uuid, crmEnabled, lang)
 		bot.Send(resp)
 	}
 }
 
-func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn bool) *tgbotapi.MessageConfig {
+func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn bool, lang string) *tgbotapi.MessageConfig {
 
 	resp := tgbotapi.NewMessage(chatId, "")
 
 	traffic, err := j.inboundService.GetClientTrafficById(uuid)
 	if err != nil {
 		logger.Error(err)
-		resp.Text = Tr("incorrectUuid")
+		resp.Text = Tr("incorrectUuid", lang)
 		return &resp
 	}
 	expiryTime := ""
@@ -67,13 +77,17 @@ func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn
 	} else {
 		total = fmt.Sprintf("%s", common.FormatTraffic((traffic.Total)))
 	}
-	resp.Text += fmt.Sprintf("💡 Active: %t\r\n📧 Name: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n\r\n",
-		traffic.Enable, traffic.Email, common.FormatTraffic((traffic.Up + traffic.Down)),
+	active := "No"
+	if traffic.Enable {
+		active = "Yes"
+	}
+	resp.Text += fmt.Sprintf("💡 Active: %s\r\n📧 Name: %s\r\n🔄 Total: %s / %s\r\n📅 Expires on: %s\r\n\r\n",
+		active, traffic.Email, common.FormatTraffic((traffic.Up + traffic.Down)),
 		total, expiryTime)
 
-	buttons := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(Tr("update"), "update:"+uuid))
+	buttons := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(Tr("update", lang), updateCommandPrefix+uuid))
 	if showRenewBtn {
-		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(Tr("renew"), "renew:"+uuid))
+		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(Tr("renew", lang), renewCommandPrefix+uuid))
 	}
 	resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(buttons)
 	return &resp
@@ -98,6 +112,10 @@ func (j *TelegramService) NotifyUsersAboutToExpire() {
 
 	for i := range clients {
 		uuids := strings.Split(clients[i].Uid, ",")
+		lang := defaultLang
+		if clients[i].Language != "" {
+			lang = clients[i].Language
+		}
 
 		for _, uuid := range uuids {
 			traffic, err := j.inboundService.GetClientTrafficById(uuid)
@@ -105,18 +123,18 @@ func (j *TelegramService) NotifyUsersAboutToExpire() {
 				continue
 			}
 			if traffic.Total > 0 && ((traffic.Up + traffic.Down) > traffic.Total*85/100) {
-				msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgTrafficExceeds85"))
+				msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgTrafficExceeds85", lang))
 				bot.Send(msg)
 
-				usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled())
+				usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled(), lang)
 				bot.Send(usageMsg)
 			} else if traffic.ExpiryTime > 0 {
 				remainingHours := time.Unix((traffic.ExpiryTime / 1000), 0).Sub(time.Now())
 				if remainingHours <= time.Hour*24 {
-					msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgAccExpiringSoon"))
+					msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgAccExpiringSoon", lang))
 					bot.Send(msg)
 
-					usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled())
+					usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled(), lang)
 					bot.Send(usageMsg)
 				}
 			}
@@ -178,7 +196,7 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 	finalMsg, err := t.settingService.GetTgCrmRegFinalMsg()
 	if err != nil {
 		logger.Error(err)
-		finalMsg = Tr("msgAccCreateSuccess")
+		finalMsg = Tr("msgAccCreateSuccess", client.Language)
 	}
 	finalMsg = t.replaceMarkup(&finalMsg, client.ChatID, uuid)
 	t.SendMsgToTgBot(client.ChatID, finalMsg)
@@ -186,13 +204,14 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 }
 
 func (t *TelegramService) RenewClient(client *model.TgClient) error {
+	logger.Error("RenewClient lang:", client)
 	err := t.UpdateClient(client)
 	if err != nil {
 		logger.Error(err)
 		return err
 	}
 
-	finalMsg := Tr("msgRenewSuccess")
+	finalMsg := Tr("msgRenewSuccess", client.Language)
 	t.SendMsgToTgBot(client.ChatID, finalMsg)
 	return nil
 }
@@ -232,16 +251,22 @@ func (t *TelegramService) HandleMessage(msg *tgbotapi.Message) *tgbotapi.Message
 func (t *TelegramService) HandleCallback(callback *tgbotapi.CallbackQuery) (resp *tgbotapi.MessageConfig, delete bool, update bool) {
 
 	chatId := callback.Message.Chat.ID
-	if strings.HasPrefix(callback.Data, "update:") {
-		resp = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, "update:"), t.settingService.GetTgCrmEnabled())
+	if strings.HasPrefix(callback.Data, updateCommandPrefix) {
+		lang := defaultLang
+		client, err := t.getTgClient(chatId)
+		if err == nil && client.Language != "" {
+			lang = client.Language
+		}
+
+		resp = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, updateCommandPrefix), t.settingService.GetTgCrmEnabled(), lang)
 		delete = false
 		update = true
 		return
-	} else if strings.HasPrefix(callback.Data, "renew:") {
+	} else if strings.HasPrefix(callback.Data, renewCommandPrefix) {
 		if _, exists := TgSessions[callback.Message.Chat.ID]; !exists {
 			TgSessions[chatId] = InitFSM()
 		}
-		resp = TgSessions[chatId].RenewAccount(chatId, strings.TrimPrefix(callback.Data, "renew:"))
+		resp = TgSessions[chatId].RenewAccount(chatId, strings.TrimPrefix(callback.Data, renewCommandPrefix))
 		delete = false
 		update = false
 		return
@@ -361,4 +386,16 @@ func (t *TelegramService) DeleteMsg(id int64) error {
 		return err
 	}
 	return nil
+}
+
+func (t *TelegramService) SaveClientLanguage(id int64, lang string) error {
+	db := database.GetTgDB()
+	result := db.Model(model.TgClient{}).
+		Where("chat_id = ?", id).
+		Update("language", lang)
+	err := result.Error
+	if err != nil || result.RowsAffected != 1 {
+		logger.Error("SaveClientLanguage error: ", err)
+	}
+	return err
 }

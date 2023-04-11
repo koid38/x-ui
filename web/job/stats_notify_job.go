@@ -160,9 +160,7 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	updates := bot.GetUpdatesChan(u)
 
-	crmEnabled := j.settingService.GetTgCrmEnabled()
-
-	config := tgbotapi.NewSetMyCommands(service.CreateChatMenu(crmEnabled)...)
+	config := tgbotapi.NewSetMyCommands(service.CreateChatMenu()...)
 	if _, err := bot.Request(config); err != nil {
 		logger.Warning(err)
 	}
@@ -188,8 +186,11 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 				if _, err := bot.Request(updateMsg); err != nil {
 					logger.Warning(err)
 				}
-			} else if _, err := bot.Send(resp); err != nil {
-				logger.Warning(err)
+			} else if resp != nil {
+				_, err := bot.Send(resp)
+				if err != nil {
+					logger.Warning(err)
+				}
 			}
 
 			if del {
@@ -221,7 +222,6 @@ func (j *StatsNotifyJob) OnReceive() *StatsNotifyJob {
 
 	}
 	return j
-
 }
 
 func (j *StatsNotifyJob) StopReceiving() {

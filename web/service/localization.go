@@ -5,12 +5,13 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"x-ui/logger"
 
 	"github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
 )
 
-var localizer *i18n.Localizer
+var localizers map[string]*i18n.Localizer = make(map[string]*i18n.Localizer)
 var crmI18n func(key string, params ...string) (string, error)
 
 func (s *TelegramService) InitI18n() error {
@@ -34,13 +35,28 @@ func (s *TelegramService) InitI18n() error {
 		return err
 	}
 
-	localizer = i18n.NewLocalizer(bundle)
+	for _, lang := range bundle.LanguageTags() {
+		localizers[lang.String()] = i18n.NewLocalizer(bundle, lang.String())
+	}
 	return nil
 }
 
-func Tr(key string) string {
+func Tr(key string, lang string) string {
+	localizer, ok := localizers[lang]
+	if !ok {
+		logger.Error("Unsupported language")
+		return ""
+	}
 	value, _ := localizer.Localize(&i18n.LocalizeConfig{
 		MessageID: key,
 	})
 	return value
+}
+
+func GetAvailableLangs() []string {
+	langs := make([]string, 0)
+	for lang := range localizers {
+		langs = append(langs, lang)
+	}
+	return langs
 }
