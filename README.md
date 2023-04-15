@@ -1,91 +1,50 @@
-# x-ui
+# DIDITRA x-ui
 > **Disclaimer: This project is only for personal learning and communication, please do not use it for illegal purposes, please do not use it in a production environment**
 
 
-xray panel supporting multi-protocol, **Multi-lang (English,Chinese)**, **IP Restrication Per Inbound**
+DIDITRA x-ui is an xray panel supporting multiple protocols with a feature-rich multi-lingual Telegram bot (English and Persian as of now)
 
-| Features        | Enable?           |
-| ------------- |:-------------:|
-| Multi-lang | :heavy_check_mark: |
-| [IP Restriction](https://github.com/diditra/x-ui/#enable-ip-restrictions-per-inbound) | :heavy_check_mark: |
-| [Inbound Multi User](https://github.com/diditra/x-ui/#enable-multi-user-traffic--exprire-day) | :heavy_check_mark: |
-| [Multi User Traffic & expire day](https://github.com/diditra/x-ui/#enable-multi-user-traffic--exprire-day) | :heavy_check_mark: |
-| [REST API](https://github.com/diditra/x-ui/pull/51) | :heavy_check_mark: |
-| [Telegram BOT](https://github.com/diditra/x-ui/pull/110) | :heavy_check_mark: |
+| Features      |
+| ------------- |
+| :heavy_check_mark: [Multi-user Inbound](https://github.com/diditra/x-ui/#screenshots) |
+| :heavy_check_mark: [Multi-user Traffic & expiry day](https://github.com/diditra/x-ui/#screenshots) |
+| :heavy_check_mark: REST API  |
+| :heavy_check_mark: [Telegram BOT](https://github.com/diditra/x-ui/#telegram-bot) |
 
 **If you think this project is helpful to you, you may wish to give a** :star2: 
+**or donate a small amount as a token of appreciation.**
+
+<details markdown="1"> <summary><b>Donate with crypto</b></summary> 
+
+- ![TON](https://img.shields.io/badge/Donate-Ton-informational) `UQB_gzlhEi1BAr8S0_J_9zSafhqmd2HlsY7fd6wzbmvdCNT_`
+- ![USDT](https://img.shields.io/badge/Donate-USDT-orange?style=flat-square&logo=Tether) `0xe45a0c30d3dd334dd84aace78f33fa11aceac80d`
+- ![Bitcoin](https://img.shields.io/badge/Donate-BTC-orange?style=flat-square&logo=bitcoin) `386KtbDKRQ9Zt8JG1saH1ea8YX73kmBqBN`
+- ![Ethereum](https://img.shields.io/badge/Donate-ETH-blueviolet?style=flat-square&logo=Ethereum) `0xe45a0c30d3dd334dd84aace78f33fa11aceac80d`
+- ![LiteCoin](https://img.shields.io/badge/Donate-LTC-blue?style=flat-square&logo=Litecoin) `LNxgWyMGJ1F3ydG8bH8JPcVL8o4gB1YTYP`
+
+</details><br>
 
 # Features
 
 - System Status Monitoring
 - Support multi-user multi-protocol, web page visualization operation
 - Supported protocols: vmess, vless, trojan, shadowsocks, dokodemo-door, socks, http
-- Support for configuring more transport configurations
+- Supports feature-rich Telegram bot with built-in account management (VPN store)
 - Traffic statistics, limit traffic, limit expiration time
 - Customizable xray configuration templates
 - Support https access panel (self-provided domain name + ssl certificate)
 - Support one-click SSL certificate application and automatic renewal
 - For more advanced configuration items, please refer to the panel
 
-# Enable IP Restrictions Per Inbound
-`!!! NO NEED TO DO THIS IF YOU HAVE FRESH INSTALL`
-
-1 - open panel settings and tab xray related settings find `"api": ` and put bellow code just before it :
- ```json
- "log": {
-    "loglevel": "warning", 
-    "access": "./access.log"
-  }, 
-```
-- change access log path as you want
-
-2 - add **IP limit and Unique Email** for inbound(vmess & vless)
-
-# Enable Multi User Traffic & Exprire Day
-![Screenshot from 2022-11-15 07-43-58](https://user-images.githubusercontent.com/16622377/201922652-111ff5b8-272b-49f5-a656-d6f57d79eaed.png)
-
-`!!! NO NEED TO DO THIS IF YOU HAVE FRESH INSTALL`
-
-**for enable traffic for users you should do :**
-
-find this in config : 
-``` json
- "policy": {
-    "system": {
-```
-**and add this just after  ` "policy": {` :**
-```json
-    "levels": {
-      "0": {
-        "statsUserUplink": true,
-        "statsUserDownlink": true
-      }
-    },
-```
-
-
-**the final output is like :**
-```json
-  "policy": {
-    "levels": {
-      "0": {
-        "statsUserUplink": true,
-        "statsUserDownlink": true
-      }
-    },
-
-    "system": {
-      "statsInboundDownlink": true,
-      "statsInboundUplink": true
-    }
-  },
-  "routing": {
-```
- restart panel
 # Install & Upgrade
 
 ```
 bash <(curl -Ls https://raw.githubusercontent.com/diditra/x-ui/master/install.sh)
+```
+## Install custom version
+To install your desired version you can add the version to the end of install command. Example for ver `v1.1.0`:
+```
+bash <(curl -Ls https://raw.githubusercontent.com/diditra/x-ui/master/install.sh) v1.1.0
 ```
 
 ## Manual install & upgrade
@@ -108,49 +67,15 @@ systemctl enable x-ui
 systemctl restart x-ui
 ```
 
-## Install using docker
-
-> This docker tutorial and docker image are provided by [Diditra](https://github.com/diditra)
-
-1. install docker
-
-```shell
-curl -fsSL https://get.docker.com | sh
-```
-
-2. install x-ui
-
-```shell
-mkdir x-ui && cd x-ui
-docker run -itd --network=host \
-    -v $PWD/db/:/etc/x-ui/ \
-    -v $PWD/cert/:/root/cert/ \
-    --name x-ui --restart=unless-stopped \
-    diditra/x-ui:latest
-```
-
-> Build your own image
-
-```shell
-docker build -t x-ui .
-```
-
 ## SSL certificate application
 
-> This feature and tutorial are provided by [FranzKafkaYu](https://github.com/FranzKafkaYu)
+The script has a built-in SSL certificate application function. To use this script to apply for a certificate, you need the following:
 
-The script has a built-in SSL certificate application function. To use this script to apply for a certificate, the following conditions must be met:
-
-- Know the Cloudflare registered email
-- Know the Cloudflare Global API Key
+- Cloudflare registered email
+- Cloudflare Global API Key
 - The domain name has been resolved to the current server through cloudflare
 
-How to get the Cloudflare Global API Key:
-    ![](media/bda84fbc2ede834deaba1c173a932223.png)
-    ![](media/d13ffd6a73f938d1037d0708e31433bf.png)
-
-When using, just enter `email`, `domain`, `API KEY` and the schematic diagram is as follows：
-        ![](media/2022-04-04_141259.png)
+Run the "x-ui" command on the server and from the menu choose 16. Then enter the information as requested by the script.
 
 Precautions:
 
@@ -159,51 +84,76 @@ Precautions:
 - The certificate installation directory is the /root/cert directory
 - The certificates applied for by this script are all generic domain name certificates
 
-## Tg robot use (under development, temporarily unavailable)
+## Telegram Bot
 
-> This feature and tutorial are provided by [FranzKafkaYu](https://github.com/FranzKafkaYu)
+DIDITRA x-ui has a feature-rich Telegram bot which is linked to the customer management features on the panel. The end-user bot supports multiple languages (Farsi/English at the moment) and most of the messages are easily configurable via the settings page of the panel.
 
-X-UI supports daily traffic notification, panel login reminder and other functions through the Tg robot. To use the Tg robot, you need to apply for the specific application tutorial. You can refer to the [blog](https://coderfan.net/how-to-use-telegram-bot-to-alarm-you-when-someone-login-into-your-vps.html)
-Set the robot-related parameters in the panel background, including:
+### Admin-side bot
 
-- Tg Robot Token
-- Tg Robot ChatId
-- Tg robot cycle runtime, in crontab syntax
+DIDITRA x-ui supports daily traffic notification, panel login reminder and other functions through the admin TG robot. To use the TG robot, you need to set the Telegram bot parameters on the panel, including:
+
+- TG Robot Token
+- TG Robot ChatId
+- TG robot cycle runtime, in crontab syntax
 
 
 Reference syntax:
 
-- 30 * * * * * //Notify at the 30s of each point
+- 30 * * * * * // Notify at the 30s of each point
 - @hourly // hourly notification
 - @daily // Daily notification (00:00 in the morning)
 - @every 8h // notify every 8 hours
 - TG notification content:
+  - Node traffic usage
+  - Panel login reminder
+  - Node expiration reminder
+  - Traffic warning reminder
 
-- Node traffic usage
-- Panel login reminder
-- Node expiration reminder
-- Traffic warning reminder
+More features are coming soon...
 
-More features are planned...
+### Client-side bot
 
+DIDITRA x-ui has a simple VPN shop via Telegram that can be enabled on the settings page under "Telegram CRM". You can configure quite a few of the messages that are sent to the user during the ordering and renewal. Here are some of the features of our TG bot with some screenshots.
 
-## suggestion system
+- Clients can order and renew their accounts via Telegram
+- Multiple accounts per each Telegram ID
+- Payment receipt will be forwarded to the admin as soon as the user completes the order
+- Reminder of expiration (less than 24 hours or less than 15% of the quota)
+- Contact support and refer to friends
 
+## Screenshots
+
+### Panel
+
+![Account Summary](media/account_summary.png)
+
+<br />
+
+![Multi Client](media/multi_client.png)
+
+<br />
+
+![Telegram Clients](media/tg_clients.png)
+
+<br />
+
+![Telegram Orders](media/tg_client_orders.png)
+
+### Client-side Telegram bot
+![Start](media/start.png)
+![English Menu](media/menu_en.png)
+![Persian Menu](media/menu_fa.png)
+<br />
+
+![English Reminder](media/reminder_en.png)
+![Persian Reminder](media/reminder_fa.png)
+    
+
+## Supported operating systems
+
+- Ubuntu 20+ (the only OS actively tested)
 - CentOS 7+
-- Ubuntu 16+
 - Debian 8+
-
-# common problem
-
-## Migrating from v2-ui
-
-First install the latest version of x-ui on the server where v2-ui is installed, and then use the following command to migrate, which will migrate the native v2-ui `All inbound account data` to x-ui，`Panel settings and username passwords are not migrated`
-
-> Please `Close v2-ui` and `restart x-ui`, otherwise the inbound of v2-ui will cause a `port conflict with the inbound of x-ui`
-
-```
-x-ui v2-ui
-```
 
 ## Stargazers over time
 
