@@ -6,15 +6,14 @@ DIDITRA x-ui is an xray panel supporting multiple protocols with a feature-rich 
 
 | Features      |
 | ------------- |
-| :heavy_check_mark: [Multi-user Inbound](https://github.com/diditra/x-ui/#screenshots) |
-| :heavy_check_mark: [Multi-user Traffic & expiry day](https://github.com/diditra/x-ui/#screenshots) |
+| :heavy_check_mark: [Multi-user Inbounds](https://github.com/diditra/x-ui/#screenshots) |
+| :heavy_check_mark: [Individual quota and expiry date for each user](https://github.com/diditra/x-ui/#screenshots) |
 | :heavy_check_mark: REST API  |
 | :heavy_check_mark: [Telegram BOT](https://github.com/diditra/x-ui/#telegram-bot) |
+| :heavy_check_mark: [Screenshots](https://github.com/diditra/x-ui/#screenshots) |
 
 **If you think this project is helpful to you, you may wish to give a** :star2: 
 **or donate a small amount as a token of appreciation.**
-
-<details markdown="1"> <summary><b>Donate with crypto</b></summary> 
 
 - ![TON](https://img.shields.io/badge/Donate-Ton-informational) `UQB_gzlhEi1BAr8S0_J_9zSafhqmd2HlsY7fd6wzbmvdCNT_`
 - ![USDT](https://img.shields.io/badge/Donate-USDT-orange?style=flat-square&logo=Tether) `0xe45a0c30d3dd334dd84aace78f33fa11aceac80d`
@@ -22,7 +21,7 @@ DIDITRA x-ui is an xray panel supporting multiple protocols with a feature-rich 
 - ![Ethereum](https://img.shields.io/badge/Donate-ETH-blueviolet?style=flat-square&logo=Ethereum) `0xe45a0c30d3dd334dd84aace78f33fa11aceac80d`
 - ![LiteCoin](https://img.shields.io/badge/Donate-LTC-blue?style=flat-square&logo=Litecoin) `LNxgWyMGJ1F3ydG8bH8JPcVL8o4gB1YTYP`
 
-</details><br>
+<br />
 
 # Features
 
