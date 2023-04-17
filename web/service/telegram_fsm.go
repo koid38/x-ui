@@ -202,7 +202,7 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
 func ChooseLangState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
-	if msg.IsCommand() {
+	if isTgCommand(msg) {
 		return abort(s, msg)
 	}
 
@@ -221,7 +221,7 @@ func ChooseLangState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 
 func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
-	if msg.IsCommand() {
+	if isTgCommand(msg) {
 		return abort(s, msg)
 	}
 
@@ -263,7 +263,7 @@ func RegAccTypeState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfi
 
 func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
-	if msg.IsCommand() {
+	if isTgCommand(msg) {
 		return abort(s, msg)
 	}
 
@@ -283,7 +283,7 @@ func RegEmailState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig 
 
 func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
-	if msg.IsCommand() {
+	if isTgCommand(msg) {
 		return abort(s, msg)
 	}
 
@@ -314,7 +314,7 @@ func RegNoteState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
 func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 
-	if msg.IsCommand() {
+	if isTgCommand(msg) {
 		return abort(s, msg)
 	}
 
@@ -349,7 +349,7 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 }
 
 func SendReceiptState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
-	if msg.IsCommand() {
+	if isTgCommand(msg) {
 		return abort(s, msg)
 	}
 
@@ -405,6 +405,13 @@ func ConfirmResetState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageCon
 /*********************************************************
 * Helper functions
 *********************************************************/
+
+func isTgCommand(msg *tgbotapi.Message) bool {
+	if msg.IsCommand() || strings.HasPrefix(msg.Text, "/") {
+		return true
+	}
+	return false
+}
 
 func abort(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	s.state = IdleState
