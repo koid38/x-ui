@@ -50,12 +50,14 @@ func (j *TelegramService) GetAllClientUsages(chatId int64) {
 
 	crmEnabled := j.settingService.GetTgCrmEnabled()
 	for _, uuid := range uuids {
-		resp := j.GetClientUsage(chatId, uuid, crmEnabled, lang)
-		bot.Send(resp)
+		resp, err := j.GetClientUsage(chatId, uuid, crmEnabled, lang)
+		if err != nil {
+			bot.Send(resp)
+		}
 	}
 }
 
-func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn bool, lang string) *tgbotapi.MessageConfig {
+func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn bool, lang string) (*tgbotapi.MessageConfig, error) {
 
 	resp := tgbotapi.NewMessage(chatId, "")
 
@@ -63,7 +65,7 @@ func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn
 	if err != nil {
 		logger.Error(err)
 		resp.Text = Tr("incorrectUuid", lang)
-		return &resp
+		return &resp, err
 	}
 	expiryTime := ""
 	if traffic.ExpiryTime == 0 {
@@ -90,7 +92,7 @@ func (j *TelegramService) GetClientUsage(chatId int64, uuid string, showRenewBtn
 		buttons = append(buttons, tgbotapi.NewInlineKeyboardButtonData(Tr("renew", lang), renewCommandPrefix+uuid))
 	}
 	resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(buttons)
-	return &resp
+	return &resp, nil
 }
 
 func (j *TelegramService) NotifyUsersAboutToExpire() {
@@ -123,18 +125,23 @@ func (j *TelegramService) NotifyUsersAboutToExpire() {
 				continue
 			}
 			if traffic.Total > 0 && ((traffic.Up + traffic.Down) > traffic.Total*85/100) {
+				usageMsg, err := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled(), lang)
+				if err != nil {
+					continue
+				}
 				msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgTrafficExceeds85", lang))
 				bot.Send(msg)
-
-				usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled(), lang)
 				bot.Send(usageMsg)
 			} else if traffic.ExpiryTime > 0 {
 				remainingHours := time.Unix((traffic.ExpiryTime / 1000), 0).Sub(time.Now())
 				if remainingHours <= time.Hour*24 {
+					usageMsg, err := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled(), lang)
+					if err != nil {
+						continue
+					}
 					msg := tgbotapi.NewMessage(clients[i].ChatID, Tr("msgAccExpiringSoon", lang))
 					bot.Send(msg)
 
-					usageMsg := j.GetClientUsage(clients[i].ChatID, uuid, j.settingService.GetTgCrmEnabled(), lang)
 					bot.Send(usageMsg)
 				}
 			}
@@ -181,6 +188,7 @@ func (t *TelegramService) UpdateClient(client *model.TgClient) error {
 		} else {
 			client.Uid = dbClient.Uid
 		}
+		client.Enabled = true
 	}
 	return db.Save(client).Error
 }
@@ -189,14 +197,19 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 	uuid := client.Uid
 	err := t.UpdateClient(client)
 	if err != nil {
-		logger.Error(err)
+		logger.Error("RegisterClient error:", err)
 		return err
+	}
+
+	lang := defaultLang
+	if client.Language != "" {
+		lang = client.Language
 	}
 
 	finalMsg, err := t.settingService.GetTgCrmRegFinalMsg()
 	if err != nil {
 		logger.Error(err)
-		finalMsg = Tr("msgAccCreateSuccess", client.Language)
+		finalMsg = Tr("msgAccCreateSuccess", lang)
 	}
 	finalMsg = t.replaceMarkup(&finalMsg, client.ChatID, uuid)
 	t.SendMsgToTgBot(client.ChatID, finalMsg)
@@ -204,14 +217,18 @@ func (t *TelegramService) RegisterClient(client *model.TgClient) error {
 }
 
 func (t *TelegramService) RenewClient(client *model.TgClient) error {
-	logger.Error("RenewClient lang:", client)
 	err := t.UpdateClient(client)
 	if err != nil {
-		logger.Error(err)
+		logger.Error("RenewClient error:", err)
 		return err
 	}
 
-	finalMsg := Tr("msgRenewSuccess", client.Language)
+	lang := defaultLang
+	if client.Language != "" {
+		lang = client.Language
+	}
+
+	finalMsg := Tr("msgRenewSuccess", lang)
 	t.SendMsgToTgBot(client.ChatID, finalMsg)
 	return nil
 }
@@ -258,7 +275,7 @@ func (t *TelegramService) HandleCallback(callback *tgbotapi.CallbackQuery) (resp
 			lang = client.Language
 		}
 
-		resp = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, updateCommandPrefix), t.settingService.GetTgCrmEnabled(), lang)
+		resp, _ = t.GetClientUsage(chatId, strings.TrimPrefix(callback.Data, updateCommandPrefix), t.settingService.GetTgCrmEnabled(), lang)
 		delete = false
 		update = true
 		return

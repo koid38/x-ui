@@ -122,7 +122,18 @@ func IdleState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 				}
 			}
 		} else {
-			resp = *s.telegramService.GetClientUsage(msg.Chat.ID, args, s.telegramService.settingService.GetTgCrmEnabled(), s.lang)
+			uuid := parseUuid(args)
+			if uuid == "" {
+				resp = tgbotapi.NewMessage(msg.Chat.ID, Tr("incorrectUuid", s.lang))
+				logger.Error("No uuid found in the argument: ", args)
+				return &resp
+			}
+
+			response, err := s.telegramService.GetClientUsage(msg.Chat.ID, uuid, s.telegramService.settingService.GetTgCrmEnabled(), s.lang)
+			if err != nil {
+				return response
+			}
+			resp = *response
 
 			if client == nil {
 				name := msg.Chat.FirstName + " " + msg.Chat.LastName + " @" + msg.Chat.UserName
@@ -319,8 +330,7 @@ func RegUuidState(s *TgSession, msg *tgbotapi.Message) *tgbotapi.MessageConfig {
 	}
 
 	resp := tgbotapi.NewMessage(msg.Chat.ID, "")
-	re := regexp.MustCompile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
-	uuid := re.FindString(msg.Text)
+	uuid := parseUuid(msg.Text)
 
 	if uuid == "" || !s.telegramService.CheckIfClientExists(uuid) {
 		resp.Text = Tr("msgIncorrectUuid", s.lang)
@@ -432,6 +442,13 @@ func getLanguagesSelector(resp *tgbotapi.MessageConfig) {
 		resp.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(row)
 	}
 
+}
+
+func parseUuid(text string) string {
+	re := regexp.MustCompile("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
+	uuid := re.FindString(text)
+
+	return uuid
 }
 
 func (s *TgSession) loadClientLang(chatId int64) {

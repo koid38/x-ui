@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 	"x-ui/database"
 	"x-ui/database/model"
@@ -83,7 +84,7 @@ func (s *InboundService) checkEmailsExist(emails map[string]bool, ignoreId int) 
 		}
 
 		for _, client := range clients {
-			if emails[client.Email] {
+			if emails[strings.ToLower(client.Email)] {
 				return client.Email, nil
 			}
 		}
@@ -99,10 +100,10 @@ func (s *InboundService) checkEmailExistForInbound(inbound *model.Inbound) (stri
 	emails := make(map[string]bool)
 	for _, client := range clients {
 		if client.Email != "" {
-			if emails[client.Email] {
+			if emails[strings.ToLower(client.Email)] {
 				return client.Email, nil
 			}
-			emails[client.Email] = true
+			emails[strings.ToLower(client.Email)] = true
 		}
 	}
 	return s.checkEmailsExist(emails, inbound.Id)
@@ -411,7 +412,7 @@ func (s *InboundService) GetClientTrafficById(uuid string) (traffic *xray.Client
 	inbound := &model.Inbound{}
 	traffic = &xray.ClientTraffic{}
 
-	err = db.Model(model.Inbound{}).Where("settings like ?", "%"+uuid+"%").First(inbound).Error
+	err = db.Model(model.Inbound{}).Where("settings like ?", "%\""+uuid+"\"%").First(inbound).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Warning(err)
