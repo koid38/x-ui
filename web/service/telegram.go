@@ -51,7 +51,7 @@ func (j *TelegramService) GetAllClientUsages(chatId int64) {
 	crmEnabled := j.settingService.GetTgCrmEnabled()
 	for _, uuid := range uuids {
 		resp, err := j.GetClientUsage(chatId, uuid, crmEnabled, lang)
-		if err != nil {
+		if err == nil {
 			bot.Send(resp)
 		}
 	}
